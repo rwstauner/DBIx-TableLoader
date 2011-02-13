@@ -360,7 +360,7 @@ I tried to make this module a base class to be able to handle various formats.
 
 =for :list
 * Allow a custom column name transformation sub to be passed in
-* Use String::CamelCase::decamelize by default?
+* Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
 * Consider using something like L<Text::CSV::SQLhelper>
 to guess appropriate data types for each column
