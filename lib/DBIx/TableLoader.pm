@@ -16,12 +16,35 @@ use Carp qw(croak);
 
 =method new
 
+Create a new instance.
+
 Options:
 
 =for :list
-* C<create> - Boolean; Whether or not to perform the CREATE statement.
-Defaults to true
-* TODO: list the rest
+* C<create> - Boolean; Whether or not to perform the C<CREATE> statement.
+Defaults to true.
+* C<columns> - Arrayref of column definitions;
+Each element can be an arrayref of column name and data type
+or just a string for the column name and C<default_column_type> will be used.
+* C<create_prefix> - The opening of the SQL statement;
+See L</create_prefix>.  Overwrite if you need something more complex.
+* C<create_suffix> - The closing of the SQL statement;
+See L</create_suffix>.  Overwrite if you need something more complex.
+* C<data> - An arrayref of arrayrefs of data to populate the table;
+Subclasses may define more appopriate options and ignore this parameter.
+* C<dbh> - A database handle as returned by C<< DBI->connect() >>
+* C<default_column_type> - The default data type that will be used for each
+column that does not define a data type;
+Unfortunately these are specific to the database driver and may need to be set.
+Default is 'varchar'.
+* C<drop> - Boolean;
+Whether or not to execute a C<DROP> statement before C<CREATE>;
+Defaults to false.  Set it to true if the named table already exists and you
+want to recreate it.
+* C<name> - Table name; Defaults to 'data'.
+* C<table_type> - String that will go before the word 'TABLE' in C<create_prefix>.
+C<'TEMPORARY'> would be an example of a useful value.
+This is probably database driver dependent, so use an appropriate value.
 
 =cut
 
