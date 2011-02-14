@@ -42,6 +42,10 @@ Whether or not to execute a C<DROP> statement before C<CREATE>;
 Defaults to false.  Set it to true if the named table already exists and you
 want to recreate it.
 * C<name> - Table name; Defaults to 'data'.
+* C<name_prefix> - String prepended to table name;
+Probably mostly useful for subclasses where C<name> can be determined automatically.
+* C<name_suffix> - String appended to table name.
+Probably mostly useful for subclasses where C<name> can be determined automatically.
 * C<table_type> - String that will go before the word 'TABLE' in C<create_prefix>.
 C<'TEMPORARY'> would be an example of a useful value.
 This is probably database driver dependent, so use an appropriate value.
@@ -87,6 +91,8 @@ sub defaults {
 		drop                 => 0,
 		identifier_quote     => '"', # '`'
 		name                 => 'data',
+		name_prefix          => '',
+		name_suffix          => '',
 		table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
 	};
 }
@@ -311,13 +317,14 @@ sub load {
 =method name
 
 Returns the full table name
-(C<name_prefix> concatenated together with C<name>).
+(concatenation of C<name_prefix>, C<name>, and C<name_suffix>).
 
 =cut
 
 sub name {
 	my ($self) = @_;
-	return $self->{name_prefix} . $self->{name};
+	return $self->{_name} ||=
+		$self->{name_prefix} . $self->{name} . $self->{name_suffix};
 }
 
 =method prepare_data
