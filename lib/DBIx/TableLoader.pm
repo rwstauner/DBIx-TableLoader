@@ -23,6 +23,9 @@ Options:
 =for :list
 * C<create> - Boolean; Whether or not to perform the C<CREATE> statement.
 Defaults to true.
+* C<catalog> - Table catalog;
+Passed to L<DBI/quote_identifier> to get the full, quoted table name.
+None by default.
 * C<columns> - Arrayref of column definitions;
 Each element can be an arrayref of column name and data type
 or just a string for the column name and C<default_column_type> will be used.
@@ -46,6 +49,13 @@ want to recreate it.
 Probably mostly useful for subclasses where C<name> can be determined automatically.
 * C<name_suffix> - String appended to table name.
 Probably mostly useful for subclasses where C<name> can be determined automatically.
+* C<quoted_name> - Full table name, properly quoted;  Only necessary if you need
+something more complicated than
+C<< $dbh->quote_identifier($catalog, $schema, $table) >>
+(see L<DBI/quote_identifier>).
+* C<schema> - Table schema;
+Passed to L<DBI/quote_identifier> to get the full, quoted table name.
+None by default.
 * C<table_type> - String that will go before the word 'TABLE' in C<create_prefix>.
 C<'TEMPORARY'> would be an example of a useful value.
 This is probably database driver dependent, so use an appropriate value.
@@ -79,6 +89,7 @@ sub new {
 
 sub defaults {
 	return {
+		catalog              => undef,
 		columns              => undef,
 		create               => 1,
 		create_prefix        => '',
@@ -89,10 +100,11 @@ sub defaults {
 		# data type that will work most commonly across various database vendors
 		default_column_type  => 'varchar',
 		drop                 => 0,
-		identifier_quote     => '"', # '`'
 		name                 => 'data',
 		name_prefix          => '',
 		name_suffix          => '',
+		quoted_name          => undef,
+		schema               => undef,
 		table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
 	};
 }
@@ -138,13 +150,15 @@ sub create {
 Generates the opening of the C<CREATE> statement
 (everything before the column specifications).
 
+Defaults to C<< "CREATE $table_type TABLE $quoted_name (" >>.
+
 =cut
 
 sub create_prefix {
 	my ($self) = @_;
 	return $self->{create_prefix} ||=
 		"CREATE $self->{table_type} TABLE " .
-			$self->quote_identifier($self->name) . " (";
+			$self->quoted_name . " (";
 }
 
 =method create_sql
@@ -159,9 +173,9 @@ sub create_sql {
 		join(' ',
 			$self->create_prefix,
 
-			# column definitions
+			# column definitions (each element is: [name, data_type])
 			join(', ', map {
-				$self->quote_identifier($_->[0]) . ' ' . $_->[1]
+				$self->{dbh}->quote_identifier($_->[0]) . ' ' . $_->[1]
 			} $self->columns),
 
 			$self->create_suffix
@@ -172,6 +186,8 @@ sub create_sql {
 
 Generates the closing of the C<CREATE> statement
 (everything after the column specifications).
+
+Defaults to C<< ")" >>.
 
 =cut
 
@@ -222,7 +238,7 @@ Generate the SQL for the C<DROP TABLE> statement.
 sub drop_sql {
 	my ($self) = @_;
 	return "DROP $self->{table_type} TABLE " .
-		$self->quote_identifier($self->name);
+		$self->quoted_name;
 }
 
 =method fetchrow
@@ -252,7 +268,7 @@ sub insert_sql {
 	my ($self) = @_;
 	join(' ',
 		'INSERT INTO',
-		$self->quote_identifier($self->name),
+		$self->quoted_name,
 		'(',
 			join(', ', @{ $self->column_names } ),
 		')',
@@ -341,20 +357,19 @@ sub prepare_data {
 	$self->{row_index} = 0;
 }
 
-=method quote_identifier
+=method quoted_name
 
-	my $quoted = $loader->quote_identifier($name);
-
-Wrap the supplied string with C<identifier_quote>.
+Returns the full, quoted table name.
+Passes C<catalog>, C<schema>, and C<name> attributes to L<DBI/quote_identifier>.
 
 =cut
 
-sub quote_identifier {
-	my ($self, $identifier) = @_;
-	return
-		$self->{identifier_quote} .
-		$identifier .
-		$self->{identifier_quote};
+sub quoted_name {
+	my ($self) = @_;
+	# allow quoted name to be passed in to handle edge cases
+	return $self->{quoted_name} ||=
+		$self->{dbh}->quote_identifier(
+			$self->{catalog}, $self->{schema}, $self->name);
 }
 
 1;
