@@ -45,6 +45,7 @@ Whether or not to execute a C<DROP> statement before C<CREATE>;
 Defaults to false.  Set it to true if the named table already exists and you
 want to recreate it.
 * C<name> - Table name; Defaults to 'data'.
+Subclasses may provide a more useful default.
 * C<name_prefix> - String prepended to table name;
 Probably mostly useful for subclasses where C<name> can be determined automatically.
 * C<name_suffix> - String appended to table name.
@@ -100,7 +101,9 @@ sub defaults {
 		# data type that will work most commonly across various database vendors
 		default_column_type  => 'varchar',
 		drop                 => 0,
-		name                 => 'data',
+		# name() method will default to 'data' if 'name' is blank
+		# this way subclasses don't have to override this value in defaults() hash
+		name                 => '',
 		name_prefix          => '',
 		name_suffix          => '',
 		quoted_name          => undef,
@@ -340,7 +343,7 @@ Returns the full table name
 sub name {
 	my ($self) = @_;
 	return $self->{_name} ||=
-		$self->{name_prefix} . $self->{name} . $self->{name_suffix};
+		$self->{name_prefix} . ($self->{name} || 'data') . $self->{name_suffix};
 }
 
 =method prepare_data
