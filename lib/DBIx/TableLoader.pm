@@ -269,8 +269,12 @@ sub determine_column_types {
 
 	# reset each element to an arrayref if it isn't already
 	foreach my $column ( @$columns ){
-		ref $column
-			or $column = [$column, $type];
+		# upgrade lone string to arrayref
+		$column = [$column]
+			if ! ref $column;
+		# append column type if missing
+		push(@$column, $type)
+			unless @$column > 1;
 	}
 
 	return;
