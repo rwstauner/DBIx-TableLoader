@@ -144,7 +144,7 @@ Returns an arrayref of the column names.
 sub column_names {
 	my ($self) = @_;
 	# return the first element of each arrayref
-	return [ map { $$_[0] } $self->columns ];
+	return [ map { $$_[0] } @{ $self->columns } ];
 }
 
 =method create
