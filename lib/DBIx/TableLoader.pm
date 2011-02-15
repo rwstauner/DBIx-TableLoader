@@ -264,6 +264,9 @@ sub determine_column_types {
 	my ($self) = @_;
 	my ($columns, $type) = ($self->columns, $self->default_column_type);
 
+	croak("Unable to determine columns!")
+		unless $columns && @$columns;
+
 	# reset each element to an arrayref if it isn't already
 	foreach my $column ( @$columns ){
 		ref $column
