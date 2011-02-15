@@ -13,10 +13,14 @@ package DBIx::TableLoader;
 use strict;
 use warnings;
 use Carp qw(croak);
+#use DBI 1.13 (); # oldest DBI on CPAN as of 2011-02-15; Has SQL_LONGVARCHAR
 
 =method new
 
 Create a new instance.
+
+The module is very configurable but tries to guess good defaults
+in the hopes that you won't need to configure too much in most cases.
 
 Options:
 
@@ -28,7 +32,7 @@ Passed to L<DBI/quote_identifier> to get the full, quoted table name.
 None by default.
 * C<columns> - Arrayref of column definitions;
 Each element can be an arrayref of column name and data type
-or just a string for the column name and C<default_column_type> will be used.
+or just a string for the column name and L</default_column_type> will be used.
 * C<create_prefix> - The opening of the SQL statement;
 See L</create_prefix>.  Overwrite if you need something more complex.
 * C<create_suffix> - The closing of the SQL statement;
@@ -37,9 +41,14 @@ See L</create_suffix>.  Overwrite if you need something more complex.
 Subclasses may define more appopriate options and ignore this parameter.
 * C<dbh> - A database handle as returned by C<< DBI->connect() >>
 * C<default_column_type> - The default data type that will be used for each
-column that does not define a data type;
-Unfortunately these are specific to the database driver and may need to be set.
-Default is 'varchar'.
+column that does not define an explicit data type;
+The default will be guessed from the database driver
+using C<default_sql_data_type>.  See L</default_column_type>.
+* C<default_sql_data_type> - Default SQL standard data type;
+If C<default_column_type> is not supplied it will be determined by
+asking the database driver for a type corresponding to C<DBI::SQL_LONGVARCHAR>.
+Alternate values can be passed (C<DBI::SQL_VARCHAR()> for instance).
+See L</default_sql_data_type>.
 * C<drop> - Boolean;
 Whether or not to execute a C<DROP> statement before C<CREATE>;
 Defaults to false.  Set it to true if the named table already exists and you
@@ -47,9 +56,9 @@ want to recreate it.
 * C<name> - Table name; Defaults to 'data'.
 Subclasses may provide a more useful default.
 * C<name_prefix> - String prepended to table name;
-Probably mostly useful for subclasses where C<name> can be determined automatically.
+Probably mostly useful in subclasses where C<name> is determined automatically.
 * C<name_suffix> - String appended to table name.
-Probably mostly useful for subclasses where C<name> can be determined automatically.
+Probably mostly useful in subclasses where C<name> is determined automatically.
 * C<quoted_name> - Full table name, properly quoted;  Only necessary if you need
 something more complicated than
 C<< $dbh->quote_identifier($catalog, $schema, $table) >>
@@ -57,8 +66,8 @@ C<< $dbh->quote_identifier($catalog, $schema, $table) >>
 * C<schema> - Table schema;
 Passed to L<DBI/quote_identifier> to get the full, quoted table name.
 None by default.
-* C<table_type> - String that will go before the word 'TABLE' in C<create_prefix>.
-C<'TEMPORARY'> would be an example of a useful value.
+* C<table_type> - String that will go before C<TABLE> in C<create_prefix>.
+C<TEMPORARY> would be an example of a useful value.
 This is probably database driver dependent, so use an appropriate value.
 
 =cut
@@ -98,8 +107,8 @@ sub defaults {
 		# 'data' attribute may not be useful in subclasses
 		data                 => undef,
 		dbh                  => undef,
-		# data type that will work most commonly across various database vendors
-		default_column_type  => 'varchar',
+		default_column_type  => '',
+		default_sql_data_type => '',
 		drop                 => 0,
 		# name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults() hash
@@ -200,6 +209,48 @@ sub create_suffix {
 		')';
 }
 
+=method default_column_type
+
+Columns that have not been given an explicit data type
+will be defined using the C<default_column_type>.
+
+You can pass a value explicitly to the constructor,
+or it will try to guess an appropriate (string) type
+based on the database driver (using L</default_sql_data_type>).
+
+If all else fails it will default to C<text>
+(which works for C<SQLite>, C<PostgreSQL>, C<MySQL>, and some others).
+
+=cut
+
+sub default_column_type {
+	my ($self) = @_;
+	return $self->{default_column_type} ||= eval {
+		if( my $type = $self->{dbh}->type_info($self->default_sql_data_type) ){
+			return $type->{TYPE_NAME};
+		}
+	}
+		# outside the eval in case there was an error
+		|| 'text';
+}
+
+=method default_sql_data_type
+
+Passed to L<DBI/type_info> to query the database driver
+for an appropriate default column type.
+
+Defaults to C<DBI::SQL_LONGVARCHAR>.
+
+=cut
+
+sub default_sql_data_type {
+	my ($self) = @_;
+	$self->{default_sql_data_type} ||= eval {
+		require DBI;
+		DBI::SQL_LONGVARCHAR();
+	};
+}
+
 =method determine_column_types
 
 This method goes through the C<columns> and converts any scalar
@@ -210,7 +261,7 @@ It modifies itself and returns nothing.
 
 sub determine_column_types {
 	my ($self) = @_;
-	my ($columns, $type) = ($self->columns, $self->{default_column_type});
+	my ($columns, $type) = ($self->columns, $self->default_column_type);
 
 	# reset each element to an arrayref if it isn't already
 	foreach my $column ( @$columns ){
