@@ -86,7 +86,8 @@ sub new {
 	}
 
 	# be loud about typos
-	croak("Unknown options: ${\join(', ', keys %opts)}");
+	croak("Unknown options: ${\join(', ', keys %opts)}")
+		if %opts;
 
 	# custom routine to handle type of input data (hook for subclasses)
 	$self->prepare_data();
