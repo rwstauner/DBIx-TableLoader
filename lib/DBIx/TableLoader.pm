@@ -189,7 +189,7 @@ sub create_sql {
 			# column definitions (each element is: [name, data_type])
 			join(', ', map {
 				$self->{dbh}->quote_identifier($_->[0]) . ' ' . $_->[1]
-			} $self->columns),
+			} @{ $self->columns }),
 
 			$self->create_suffix
 		);
