@@ -299,6 +299,7 @@ Generate the SQL for the C<DROP TABLE> statement.
 
 sub drop_sql {
 	my ($self) = @_;
+	# TODO: look up SQL docs to determine if including type is appropriate
 	return "DROP $self->{table_type} TABLE " .
 		$self->quoted_name;
 }
