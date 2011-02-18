@@ -25,7 +25,7 @@ in the hopes that you won't need to configure too much in most cases.
 Options:
 
 =for :list
-* C<create> - Boolean; Whether or not to perform the C<CREATE> statement.
+* C<create> - Boolean; Whether or not to perform the C<CREATE TABLE> statement.
 Defaults to true.
 * C<catalog> - Table catalog;
 Passed to L<DBI/quote_identifier> to get the full, quoted table name.
@@ -35,6 +35,8 @@ Each element can be an arrayref of column name and data type
 or just a string for the column name and L</default_column_type> will be used.
 * C<create_prefix> - The opening of the SQL statement;
 See L</create_prefix>.  Overwrite if you need something more complex.
+* C<create_sql> - The C<CREATE TABLE> statement;
+See L</create_sql>.  Overwrite if you need something more complex.
 * C<create_suffix> - The closing of the SQL statement;
 See L</create_suffix>.  Overwrite if you need something more complex.
 * C<data> - An arrayref of arrayrefs of data to populate the table;
@@ -50,7 +52,7 @@ asking the database driver for a type corresponding to C<DBI::SQL_LONGVARCHAR>.
 Alternate values can be passed (C<DBI::SQL_VARCHAR()> for instance).
 See L</default_sql_data_type>.
 * C<drop> - Boolean;
-Whether or not to execute a C<DROP> statement before C<CREATE>;
+Whether or not to execute a C<DROP> statement before C<CREATE TABLE>;
 Defaults to false.  Set it to true if the named table already exists and you
 want to recreate it.
 * C<name> - Table name; Defaults to 'data'.
@@ -104,6 +106,7 @@ sub defaults {
 		columns              => undef,
 		create               => 1,
 		create_prefix        => '',
+		create_sql           => '',
 		create_suffix        => '',
 		# 'data' attribute may not be useful in subclasses
 		data                 => undef,
@@ -160,7 +163,7 @@ sub create {
 
 =method create_prefix
 
-Generates the opening of the C<CREATE> statement
+Generates the opening of the C<CREATE TABLE> statement
 (everything before the column specifications).
 
 Defaults to C<< "CREATE $table_type TABLE $quoted_name (" >>.
@@ -176,7 +179,12 @@ sub create_prefix {
 
 =method create_sql
 
-Generates the SQL for the C<CREATE> statement.
+Generates the SQL for the C<CREATE TABLE> statement
+by concatenating L</create_prefix>,
+the column definitions,
+and L</create_suffix>.
+
+Can be overridden in the constructor.
 
 =cut
 
@@ -197,7 +205,7 @@ sub create_sql {
 
 =method create_suffix
 
-Generates the closing of the C<CREATE> statement
+Generates the closing of the C<CREATE TABLE> statement
 (everything after the column specifications).
 
 Defaults to C<< ")" >>.
