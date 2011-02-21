@@ -55,6 +55,12 @@ See L</default_sql_data_type>.
 Whether or not to execute a C<DROP> statement before C<CREATE TABLE>;
 Defaults to false.  Set it to true if the named table already exists and you
 want to recreate it.
+* C<drop_prefix> - The opening of the SQL statement;
+See L</drop_prefix>.  Overwrite if you need something more complex.
+* C<drop_sql> - The C<DROP TABLE> statement;
+Will be constructed if not provided.  See L</drop_sql>.
+* C<drop_suffix> - The closing of the SQL statement;
+See L</drop_suffix>.  Overwrite if you need something more complex.
 * C<name> - Table name; Defaults to 'data'.
 Subclasses may provide a more useful default.
 * C<name_prefix> - String prepended to table name;
@@ -114,6 +120,9 @@ sub defaults {
 		default_column_type  => '',
 		default_sql_data_type => '',
 		drop                 => 0,
+		drop_prefix          => '',
+		drop_sql             => '',
+		drop_suffix          => '',
 		# name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults() hash
 		name                 => '',
@@ -299,17 +308,52 @@ sub drop {
 	$self->{dbh}->do($self->drop_sql);
 }
 
+=method drop_prefix
+
+Returns the portion of the SQL statement before the table name.
+
+Defaults to C<DROP TABLE>.
+
+=cut
+
+sub drop_prefix {
+	my ($self) = @_;
+	# default to "DROP TABLE" since SQLite, PostgreSQL, and MySQL
+	# all accept it (rather than "DROP $table_type TABLE")
+	$self->{drop_prefix} ||= 'DROP TABLE';
+}
+
 =method drop_sql
 
-Generate the SQL for the C<DROP TABLE> statement.
+Generates the SQL for the C<DROP TABLE> statement
+by concatenating L<drop_prefix>, L</quoted_name>, and L<drop_suffix>.
+
+Alternatively C<drop_sql> can be set in the constructor
+if you need something more complex.
 
 =cut
 
 sub drop_sql {
 	my ($self) = @_;
-	# TODO: look up SQL docs to determine if including type is appropriate
-	return "DROP $self->{table_type} TABLE " .
-		$self->quoted_name;
+	return $self->{drop_sql} ||= join(' ',
+		$self->drop_prefix,
+		$self->quoted_name,
+		$self->drop_suffix,
+	);
+}
+
+=method drop_suffix
+
+Returns the portion of the SQL statement after the table name.
+
+Nothing by default.
+
+=cut
+
+sub drop_suffix {
+	my ($self) = @_;
+	# default is blank
+	return $self->{drop_suffix};
 }
 
 =method fetchrow

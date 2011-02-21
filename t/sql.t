@@ -43,7 +43,7 @@ like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+bar foo,\s+
 $loader = new_ok($mod, [{%def_args, table_type => 'TEMP'}]);
 like($loader->create_prefix, qr/CREATE\s+TEMP\s+TABLE\s+"data"\s+\(/, 'default create prefix');
 like($loader->create_sql,    qr/CREATE\s+TEMP\s+TABLE\s+"data"\s*\(\s*"a"\s+foo\s*\)/, 'default create sql');
-like($loader->drop_sql,      qr/DROP\s+TEMP\s+TABLE\s+"data"/, 'drop sql');
+like($loader->drop_sql,      qr/DROP\s+TABLE\s+"data"/, 'drop sql');
 
 # TODO: inserts
 
