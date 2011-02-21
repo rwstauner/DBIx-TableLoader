@@ -21,28 +21,55 @@ my %def_args = (
 	default_column_type => 'foo',
 );
 
-$loader = new_ok($mod, [{%def_args}]);
-like($loader->create_prefix, qr/CREATE\s+TABLE\s+"data"\s+\(/, 'default create prefix');
-like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+foo\s*\)/, 'default create sql');
+sub test_create {
+	my ($title, $loader, $prefix, $columns, $suffix) = @_;
+	like($loader->create_prefix, qr/${prefix}/, "$title create prefix");
+	like($loader->create_suffix, qr/${suffix}/, "$title create suffix");
+	like($loader->create_sql,    qr/${prefix}${columns}${suffix}/, "$title create sql");
+}
+
+$loader = new_ok($mod, [{%def_args}]),
+test_create(default => $loader,
+	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+foo\s*/,
+	qr/\)/,
+);
 like($loader->drop_sql,      qr/DROP\s+TABLE\s+"data"/, 'drop sql');
 
-$loader = new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]);
-is($loader->create_suffix, 'CONSTRAINT primary key a)', 'create suffix');
-like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+foo\s*\CONSTRAINT primary key a\)/, 'create sql with suffix');
+test_create(constraint_suffix =>
+	new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]),
+	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+foo\s*/,
+	qr/CONSTRAINT primary key a\)/,
+);
 
-$loader = new_ok($mod, [{%def_args, create_suffix => ') NOT!'}]);
-is($loader->create_suffix, ') NOT!', 'create suffix');
-like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+foo\s*\) NOT!/, 'create sql with suffix');
+test_create(suffix =>
+	new_ok($mod, [{%def_args, create_suffix => ') NOT!'}]),
+	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+foo\s*/,
+	qr/\) NOT!/,
+);
 
-$loader = new_ok($mod, [{%def_args, columns => [[a => 'bar'], ['b'], 'c']}]);
-like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+bar,\s+"b"\s+foo,\s+"c"\s+foo\s*\)/, 'multiple columns');
+test_create(multiple_columns =>
+	new_ok($mod, [{%def_args, columns => [[a => 'bar'], ['b'], 'c']}]),
+	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+bar,\s+"b"\s+foo,\s+"c"\s+foo\s*/,
+	qr/\)/,
+);
 
-$loader = new_ok($mod, [{%def_args, columns => [[a => 'bar foo'], ['b', 'gri zz ly'], 'c']}]);
-like($loader->create_sql,    qr/CREATE\s+TABLE\s+"data"\s*\(\s*"a"\s+bar foo,\s+"b"\s+gri zz ly,\s+"c"\s+foo\s*\)/, 'multi-word data types');
+test_create(multi_word_data_types =>
+	new_ok($mod, [{%def_args, columns => [[a => 'bar foo'], ['b', 'gri zz ly'], 'c']}]),
+	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+bar foo,\s+"b"\s+gri zz ly,\s+"c"\s+foo\s*/,
+	qr/\)/,
+);
 
-$loader = new_ok($mod, [{%def_args, table_type => 'TEMP'}]);
-like($loader->create_prefix, qr/CREATE\s+TEMP\s+TABLE\s+"data"\s+\(/, 'default create prefix');
-like($loader->create_sql,    qr/CREATE\s+TEMP\s+TABLE\s+"data"\s*\(\s*"a"\s+foo\s*\)/, 'default create sql');
+$loader = new_ok($mod, [{%def_args, table_type => 'TEMP'}]),
+test_create(table_type => $loader,
+	qr/CREATE\s+TEMP\s+TABLE\s+"data"\s+\(/,
+	qr/\s*"a"\s+foo\s*/,
+	qr/\)/,
+);
 like($loader->drop_sql,      qr/DROP\s+TABLE\s+"data"/, 'drop sql');
 
 # TODO: inserts
