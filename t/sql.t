@@ -6,7 +6,7 @@ use Test::MockObject 1.09 ();
 #use TLHelper;
 
 my $mod = 'DBIx::TableLoader';
-eval "require $mod";
+eval "require $mod" or die $@;
 
 my $loader;
 

@@ -3,7 +3,7 @@ use warnings;
 use Test::More 0.96;
 
 my $mod = 'DBIx::TableLoader';
-eval "require $mod";
+eval "require $mod" or die $@;
 
 my $loader;
 
