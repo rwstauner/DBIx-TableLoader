@@ -284,16 +284,20 @@ sub determine_column_types {
 	croak("Unable to determine columns!")
 		unless $columns && @$columns;
 
+	# break reference
+	$columns = [@$columns];
+
 	# reset each element to an arrayref if it isn't already
 	foreach my $column ( @$columns ){
-		# upgrade lone string to arrayref
-		$column = [$column]
-			if ! ref $column;
+		# upgrade lone string to arrayref otherwise break reference
+		$column = ref $column ? [@$column] : [$column];
 		# append column type if missing
 		push(@$column, $type)
 			unless @$column > 1;
 	}
 
+	# restore changes
+	$self->{columns} = $columns;
 	return;
 }
 
