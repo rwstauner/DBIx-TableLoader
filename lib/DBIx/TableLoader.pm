@@ -94,8 +94,8 @@ sub new {
 
 	my %opts = @_ == 1 ? %{$_[0]} : @_;
 
-	my $defaults = $self->defaults;
-	while( my ($key, $value) = each %$defaults ){
+	my %defaults = (%{ $self->base_defaults }, %{ $self->defaults });
+	while( my ($key, $value) = each %defaults ){
 		$self->{$key} = exists($opts{$key})
 			? delete $opts{$key}
 			: $value;
@@ -114,7 +114,14 @@ sub new {
 	return $self;
 }
 
-sub defaults {
+=method base_defaults
+
+Returns a hashref of the options defined by the base class
+and their default values.
+
+=cut
+
+sub base_defaults {
 	return {
 		catalog              => undef,
 		columns              => undef,
@@ -142,6 +149,16 @@ sub defaults {
 		schema               => undef,
 		table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
 	};
+}
+
+=method defaults
+
+Returns a hashref of additional options defined by a subclass.
+
+=cut
+
+sub defaults {
+	return {};
 }
 
 =method columns
@@ -556,8 +573,6 @@ sub quoted_column_names {
 1;
 
 =for stopwords CSV SQLite TODO dataset
-
-=for Pod::Coverage defaults
 
 =head1 DESCRIPTION
 
