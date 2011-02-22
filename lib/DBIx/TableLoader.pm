@@ -40,7 +40,7 @@ See L</create_sql>.  Overwrite if you need something more complex.
 * C<create_suffix> - The closing of the SQL statement;
 See L</create_suffix>.  Overwrite if you need something more complex.
 * C<data> - An arrayref of arrayrefs of data to populate the table;
-Subclasses may define more appopriate options and ignore this parameter.
+Subclasses may define more appropriate options and ignore this parameter.
 * C<dbh> - A database handle as returned by C<< DBI->connect() >>
 * C<default_column_type> - The default data type that will be used for each
 column that does not define an explicit data type;
@@ -591,7 +591,7 @@ sub quoted_column_names {
 
 1;
 
-=for stopwords CSV SQLite TODO dataset
+=for stopwords CSV SQLite TODO dataset arrayrefs
 
 =head1 DESCRIPTION
 
