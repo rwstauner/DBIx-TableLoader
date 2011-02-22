@@ -601,6 +601,25 @@ interface for taking a set of data and loading it into a database table.
 Common uses would be to take data from a file (like a CSV)
 and load it into a SQLite table.
 
+=head1 SUBCLASSING
+
+This module was designed to be subclassed
+for use with specific data input formats.
+
+L<DBIx::TableLoader::CSV> is a prime example.
+It is the entire reason this base module was designed.
+
+Subclasses will likely want to override the following methods:
+
+=for :list
+* L</defaults> - a hashref of additional acceptable options (and default values)
+* L</default_name> - if you can determine a good default name from the input
+* L</get_raw_row> - to return the next row of data
+* L</prepare_data> - to initialize your object/data (open the file, etc)
+
+Be sure to check out the code for L<DBIx::TableLoader::CSV>.
+Also see a very simple example in F<t/subclass.t>.
+
 =head1 RATIONALE
 
 It seemed frequent that I would find a dataset that was difficult to
