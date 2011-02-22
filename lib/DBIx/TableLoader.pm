@@ -227,6 +227,16 @@ sub create_suffix {
 		')';
 }
 
+# ask the driver what data type it uses for the desired SQL standard type
+
+sub _data_type_from_driver {
+	my ($self, $data_type) = @_;
+	if( my $type = $self->{dbh}->type_info($data_type) ){
+		return $type->{TYPE_NAME};
+	}
+	return;
+}
+
 =method default_column_type
 
 Columns that have not been given an explicit data type
@@ -244,9 +254,7 @@ If all else fails it will default to C<text>
 sub default_column_type {
 	my ($self) = @_;
 	return $self->{default_column_type} ||= eval {
-		if( my $type = $self->{dbh}->type_info($self->default_sql_data_type) ){
-			return $type->{TYPE_NAME};
-		}
+		$self->_data_type_from_driver($self->default_sql_data_type);
 	}
 		# outside the eval in case there was an error
 		|| 'text';
