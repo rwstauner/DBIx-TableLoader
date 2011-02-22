@@ -144,7 +144,7 @@ Each element is an arrayref of column name and column data type.
 sub columns {
 	my ($self) = @_;
 	# by default the column names are found in the first row of the data
-	return $self->{columns} ||= $self->fetchrow();
+	return $self->{columns} ||= $self->get_row();
 }
 
 =method column_names
@@ -360,19 +360,17 @@ sub drop_suffix {
 	return $self->{drop_suffix};
 }
 
-=method fetchrow
+=method get_row
 
-	my $row = $loader->fetchrow();
+	my $row = $loader->get_row();
 
 Returns a single row of data at a time (as an arrayref).
 This method will be called repeatedly until it returns undef.
-
-This was designed for subclasses to be able to override
-and was influenced (obviously) by L<DBI/fetchrow>.
+The returned arrayref will be flattened and passed to L<DBI/execute>.
 
 =cut
 
-sub fetchrow {
+sub get_row {
 	my ($self) = @_;
 	return $self->{data}->[++$self->{row_index}];
 }
@@ -401,7 +399,7 @@ sub insert_sql {
 
 Execute an C<INSERT> statement on the database handle for each row of data.
 It will call L<DBI/prepare> using L</insert_sql>
-and then call L<DBI/execure> once for each row returned by L</fetchrow>.
+and then call L<DBI/execure> once for each row returned by L</get_row>.
 
 =cut
 
@@ -410,7 +408,7 @@ sub insert_all {
 
 	my $rows = 0;
 	my $sth = $self->{dbh}->prepare($self->insert_sql);
-	while( my $row = $self->fetchrow() ){
+	while( my $row = $self->get_row() ){
 		++$rows;
 		$sth->execute(@$row);
 	}
@@ -507,7 +505,7 @@ sub quoted_column_names {
 
 1;
 
-=for stopwords CSV SQLite TODO dataset fetchrow
+=for stopwords CSV SQLite TODO dataset
 
 =for Pod::Coverage defaults
 
