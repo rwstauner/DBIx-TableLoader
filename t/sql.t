@@ -23,6 +23,12 @@ my %def_args = (
 	default_column_type => 'foo',
 );
 
+my $default_drop = [
+	qr/DROP\s+TABLE/,
+	qr/"data"/,
+	qr/\s*/,
+];
+
 sub test_statement {
 	my ($method, $title, $loader, $prefix, $middle, $suffix) = @_;
 	like($loader->${\"${method}_prefix"}, qr/^${prefix}$/, "$title $method prefix");
@@ -34,57 +40,76 @@ sub test_statement {
 }
 sub test_create { test_statement('create', @_); }
 sub test_drop   { test_statement('drop',   @_); }
+sub test_all {
+	my ($title, $loader, $create, $insert, $drop) = @_;
+	test_statement('create', $title, $loader, @$create) if $create;
+	like($loader->insert_sql, $insert, "$title insert sql") if $insert;
+	test_statement('drop',   $title, $loader, @$drop) if $drop;
+}
 
-$loader = new_ok($mod, [{%def_args}]),
-test_create(default => $loader,
+test_all(default => new_ok($mod, [{%def_args}]),
+[
 	qr/CREATE\s+TABLE\s+"data"\s+\(/,
 	qr/\s*"a"\s+foo\s*/,
 	qr/\)/,
-);
-test_drop(default => $loader,
-	qr/DROP\s+TABLE/,
-	qr/"data"/,
-	qr/\s*/,
+],
+	qr/^INSERT INTO "data"\s*\(\s*"a"\s*\)\s*VALUES\s*\(\s*\?\s*\)$/,
+	$default_drop,
 );
 
-test_create(constraint_suffix =>
-	new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]),
+test_all(constraint_suffix =>
+	$loader = new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]),
+[
 	qr/CREATE\s+TABLE\s+"data"\s+\(/,
 	qr/\s*"a"\s+foo\s*/,
 	qr/CONSTRAINT primary key a\)/,
+],
+	qr/^INSERT INTO "data"\s*\(\s*"a"\s*\)\s*VALUES\s*\(\s*\?\s*\)$/,
+	$default_drop,
 );
 
-test_create(suffix =>
-	new_ok($mod, [{%def_args, create_suffix => ') NOT!'}]),
-	qr/CREATE\s+TABLE\s+"data"\s+\(/,
+test_all(create_prefix_suffix =>
+	new_ok($mod, [{%def_args, create_prefix => 'CREATE A TABLE FOR ME', create_suffix => ') NOT!'}]),
+[
+	qr/CREATE A TABLE FOR ME/,
 	qr/\s*"a"\s+foo\s*/,
 	qr/\) NOT!/,
+],
+	qr/^INSERT INTO "data"\s*\(\s*"a"\s*\)\s*VALUES\s*\(\s*\?\s*\)$/,
+	$default_drop,
 );
 
-test_create(multiple_columns =>
+test_all(multiple_columns =>
 	new_ok($mod, [{%def_args, columns => [[a => 'bar'], ['b'], 'c']}]),
+[
 	qr/CREATE\s+TABLE\s+"data"\s+\(/,
 	qr/\s*"a"\s+bar,\s+"b"\s+foo,\s+"c"\s+foo\s*/,
 	qr/\)/,
+],
+	qr/^INSERT INTO "data"\s*\(\s*"a", "b", "c"\s*\)\s*VALUES\s*\(\s*\?, \?, \?\s*\)$/,
+	$default_drop,
 );
 
-test_create(multi_word_data_types =>
-	new_ok($mod, [{%def_args, columns => [[a => 'bar foo'], ['b', 'gri zz ly'], 'c']}]),
+test_all(multi_word_name_type =>
+	new_ok($mod, [{%def_args, columns => [[a => 'bar foo'], ['b b', 'gri zz ly'], 'c']}]),
+[
 	qr/CREATE\s+TABLE\s+"data"\s+\(/,
-	qr/\s*"a"\s+bar foo,\s+"b"\s+gri zz ly,\s+"c"\s+foo\s*/,
+	qr/\s*"a"\s+bar foo,\s+"b b"\s+gri zz ly,\s+"c"\s+foo\s*/,
 	qr/\)/,
+],
+	qr/^INSERT INTO "data"\s*\(\s*"a", "b b", "c"\s*\)\s*VALUES\s*\(\s*\?, \?, \?\s*\)$/,
+	$default_drop,
 );
 
-$loader = new_ok($mod, [{%def_args, table_type => 'TEMP'}]);
-test_create(table_type => $loader,
+test_all(table_type =>
+	new_ok($mod, [{%def_args, table_type => 'TEMP'}]),
+[
 	qr/CREATE\s+TEMP\s+TABLE\s+"data"\s+\(/,
 	qr/\s*"a"\s+foo\s*/,
 	qr/\)/,
-);
-test_drop(default => $loader,
-	qr/DROP\s+TABLE/,
-	qr/"data"/,
-	qr/\s*/,
+],
+	undef,
+	$default_drop
 );
 
 test_drop(cascade =>
@@ -100,7 +125,5 @@ test_drop(prefix_suffix_drop =>
 	qr/"data"/,
 	qr/CASCADE/,
 );
-
-# TODO: inserts
 
 done_testing;
