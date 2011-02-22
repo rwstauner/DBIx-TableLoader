@@ -10,10 +10,12 @@ eval "require $mod" or die $@;
 
 my $loader;
 
-my $dbh_done;
+my ($executed, $prepared, $dbh_done) = [];
+my $sth = Test::MockObject->new()->mock(execute => sub { shift; push(@$executed, [@_]); });
 my $dbh = Test::MockObject->new()
 	->mock(quote_identifier => sub { shift; join('.', map { qq{"$_"} } grep { $_ } @_) })
 	->mock(do => sub { $dbh_done = $_[1]; })
+	->mock(prepare => sub { ++$prepared; $sth })
 ;
 
 my %def_args = (
@@ -58,7 +60,7 @@ test_all(default => new_ok($mod, [{%def_args}]),
 );
 
 test_all(constraint_suffix =>
-	$loader = new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]),
+	new_ok($mod, [{%def_args, create_suffix => 'CONSTRAINT primary key a)'}]),
 [
 	qr/CREATE\s+TABLE\s+"data"\s+\(/,
 	qr/\s*"a"\s+foo\s*/,
@@ -125,5 +127,23 @@ test_drop(prefix_suffix_drop =>
 	qr/"data"/,
 	qr/CASCADE/,
 );
+
+# insert_all
+
+foreach my $test (
+	[ [qw(a)], [1] ],
+	[ [qw(a b)], [1, 2], [3, 4] ],
+	[ [[a => 'A'], 'b'], ['a a', 'b b'], [3, 4] ],
+){
+	my $data = $test;
+	my $rows = @$data - 1;
+	$executed = [];
+	$prepared = 0;
+	$loader = new_ok($mod, [{%def_args, columns => undef, data => $data}]);
+	is($loader->insert_all, $rows, 'inserted 1 record');
+	is($prepared, 1, 'prepare called 1 time');
+	shift @$data; # remove columns from the top for comparison
+	is_deeply($executed, $data, 'expectation executed') or diag explain $data;
+}
 
 done_testing;
