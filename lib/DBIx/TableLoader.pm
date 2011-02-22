@@ -124,7 +124,7 @@ sub defaults {
 		drop_sql             => '',
 		drop_suffix          => '',
 		# name() method will default to 'data' if 'name' is blank
-		# this way subclasses don't have to override this value in defaults() hash
+		# this way subclasses don't have to override this value in defaults()
 		name                 => '',
 		name_prefix          => '',
 		name_suffix          => '',
@@ -264,6 +264,7 @@ Defaults to C<DBI::SQL_LONGVARCHAR>.
 sub default_sql_data_type {
 	my ($self) = @_;
 	$self->{default_sql_data_type} ||= eval {
+		# if this doesn't work default_column_type will just use 'text'
 		require DBI;
 		DBI::SQL_LONGVARCHAR();
 	};
@@ -437,6 +438,8 @@ sub load {
 	my ($self) = @_;
 
 	# is it appropriate/sufficient to call prepare_data() from new()?
+
+	# TODO: transaction
 
 	$self->drop()
 		if $self->{drop};
