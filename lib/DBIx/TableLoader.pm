@@ -140,7 +140,7 @@ sub base_defaults {
 		drop_suffix          => '',
 		each_row             => undef,
 		get_row              => undef,
-		# name() method will default to 'data' if 'name' is blank
+		# default_name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults()
 		name                 => '',
 		name_prefix          => '',
@@ -262,6 +262,23 @@ sub _data_type_from_driver {
 		return $type->{TYPE_NAME};
 	}
 	return;
+}
+
+=method default_name
+
+Returns the default (base) name for the table.
+
+This is mostly for subclasses where a useful table name
+can be determined from the input (like a filename).
+In this module it defaults to C<'data'>.
+
+This gets concatenated together with
+L</name_prefix> and L</name_suffix> in L</name>.
+
+=cut
+
+sub default_name {
+	return 'data';
 }
 
 =method default_column_type
@@ -524,7 +541,9 @@ Returns the full table name
 sub name {
 	my ($self) = @_;
 	return $self->{_name} ||=
-		$self->{name_prefix} . ($self->{name} || 'data') . $self->{name_suffix};
+		$self->{name_prefix} .
+		($self->{name} || $self->default_name) .
+		$self->{name_suffix};
 }
 
 =method prepare_data
