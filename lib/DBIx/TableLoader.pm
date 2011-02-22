@@ -385,7 +385,7 @@ sub insert_sql {
 		'INSERT INTO',
 		$self->quoted_name,
 		'(',
-			join(', ', @{ $self->column_names } ),
+			join(', ', @{ $self->quoted_column_names } ),
 		')',
 		'VALUES(',
 			join(', ', ('?') x @{ $self->columns }),
@@ -485,6 +485,20 @@ sub quoted_name {
 	return $self->{quoted_name} ||=
 		$self->{dbh}->quote_identifier(
 			$self->{catalog}, $self->{schema}, $self->name);
+}
+
+=method quoted_column_names
+
+Returns an arrayref of column names quoted by the database driver.
+
+=cut
+
+sub quoted_column_names {
+	my ($self) = @_;
+	return $self->{quoted_column_names} ||= [
+		map { $self->{dbh}->quote_identifier($_) }
+			@{ $self->column_names }
+	];
 }
 
 1;
