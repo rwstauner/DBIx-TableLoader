@@ -61,6 +61,14 @@ See L</drop_prefix>.  Overwrite if you need something more complex.
 Will be constructed if not provided.  See L</drop_sql>.
 * C<drop_suffix> - The closing of the SQL statement;
 See L</drop_suffix>.  Overwrite if you need something more complex.
+* C<each_row> - A sub (coderef) to filter/mangle a row before use;
+It will receive the arrayref in C<$_[0]> and should return an arrayref.
+The object will be passed as C<$_[1]> in case you want.
+* C<get_row> - A sub (coderef) that will override L</get_raw_row>;
+You can use this if your input data is in a different format
+than the module expects (to split a string into an arrayref, for instance).
+This is called as a method so the object will be C<$_[0]>.
+The return value will be passed to C<each_row> if both are present.
 * C<name> - Table name; Defaults to 'data'.
 Subclasses may provide a more useful default.
 * C<name_prefix> - String prepended to table name;
@@ -123,6 +131,8 @@ sub defaults {
 		drop_prefix          => '',
 		drop_sql             => '',
 		drop_suffix          => '',
+		each_row             => undef,
+		get_row              => undef,
 		# name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults()
 		name                 => '',
@@ -369,6 +379,22 @@ sub drop_suffix {
 	return $self->{drop_suffix};
 }
 
+=method get_raw_row
+
+Subclasses will override this method according to the input data format.
+
+This is called from L</get_row> to retrieve the next row of raw data.
+
+=cut
+
+sub get_raw_row {
+	my ($self) = @_;
+	# It would be simpler to shift the data but I don't think it actually
+	# gains us anything.  This way we're not modifying anything unexpectedly.
+	# Besides subclasses will likely be more useful than this one.
+	return $self->{data}->[ $self->{row_index}++ ];
+}
+
 =method get_row
 
 	my $row = $loader->get_row();
@@ -381,7 +407,20 @@ The returned arrayref will be flattened and passed to L<DBI/execute>.
 
 sub get_row {
 	my ($self) = @_;
-	return $self->{data}->[++$self->{row_index}];
+
+	# considered { $self->{get_row} ||= $self->can('get_raw_row'); } in new()
+	# but it just seemed a little strange... this is more normal/clear
+	my $row = $self->{get_row}
+		? $self->{get_row}->($self)
+		: $self->get_raw_row();
+
+	# If a row was found pass it through the each_row sub (if we have one).
+	# Send the row first since it's the important part.
+	# This isn't a method call, and $self will likely be seldom used.
+	$row &&= $self->{each_row}->($row, $self)
+		if $self->{each_row};
+
+	return $row;
 }
 
 =method insert_sql

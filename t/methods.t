@@ -72,15 +72,57 @@ foreach my $args (
 }
 
 # get_row
-{
-	my $loader = new_ok($mod, [dbh => $dbh, data => [ [qw(a b c)],
+my $get_row_override_data = {cat => [qw(meow string)], dog => [qw(bark squirrel)], bear => [qw(grr picnicbasket)]};
+foreach my $test (
+	# normal behavior
+	[ simple => [], [
 		[1, 2, 3],
 		[qw(a b c)],
 		[0, 0, 0],
-	]]);
-	is_deeply($loader->get_row, [1,2,3], 'got row');
-	is_deeply($loader->get_row, [qw(a b c)], 'got row');
-	is_deeply($loader->get_row, [0, 0, 0], 'got row');
+	]],
+	# modify each row
+	[ each_row => [each_row => sub { [map { $_ . $_ } @{ $_[0] }] }], [
+		[qw(11 22 33)],
+		[qw(aa bb cc)],
+		[qw(00 00 00)],
+	]],
+	# stupid example of alternate get_row... not useful, but it works
+	# (each_row would more appropriately do the same thing)
+	[ get_row =>  [get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }], [
+		[3, 2, 1],
+		[qw(c b a)],
+		[0, 0, 0],
+	]],
+	# example of both
+	[ get_row_each_row =>  [
+			get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] },
+			each_row => sub { [map { join('', ($_) x 3) } @{ $_[0] }] }], [
+		[qw(333 222 111)],
+		[qw(ccc bbb aaa)],
+		[qw(000 000 000)],
+	]],
+	# more useful get_row... using an alternate input data format
+	[ alt_get_row => [
+			data => undef,
+			columns => [qw(animal says chases)],
+			get_row => sub { my ($an, $ar) = each %$get_row_override_data; $ar && [$an x 2, @$ar] }], [
+		# map keys() so that the data comes out in the same order
+		map { [$_ x 2, @{$$get_row_override_data{$_}}] } keys %$get_row_override_data,
+	]],
+){
+	my ($title, $over, $exp) = @$test;
+	my $args = [dbh => $dbh, data => [ [qw(a b c)],
+		[1, 2, 3],
+		[qw(a b c)],
+		[0, 0, 0],
+	]];
+
+	my $loader = new_ok($mod, [@$args, @$over]);
+
+	is_deeply($loader->get_row, $_, "$title: get_row")
+		foreach @$exp;
+
+	is($loader->get_row, undef, "$title: no more rows");
 }
 
 # name
