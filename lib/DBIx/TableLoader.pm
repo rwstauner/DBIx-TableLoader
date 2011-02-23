@@ -1,5 +1,5 @@
 package DBIx::TableLoader;
-# ABSTRACT: Easily load a database table from a dataset
+# ABSTRACT: Easily load a database table from a data set
 
 =head1 SYNOPSIS
 
@@ -596,11 +596,12 @@ sub quoted_column_names {
 
 =head1 DESCRIPTION
 
-This module tries to provide a fast and simple (but also configurable)
+This module tries to provide a fast and simple (but very configurable)
 interface for taking a set of data and loading it into a database table.
 
 Common uses would be to take data from a file (like a CSV)
 and load it into a SQLite table.
+(For that specific case see L<DBIx::TableLoader::CSV>.)
 
 =head1 SUBCLASSING
 
@@ -643,8 +644,7 @@ I tried to make this module a base class to be able to handle various formats.
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
-* Consider using something like L<Text::CSV::SQLhelper>
-to guess appropriate data types for each column
+* Option for pre-scanning the data to guess appropriate data types for each column
 
 =head1 SEE ALSO
 
