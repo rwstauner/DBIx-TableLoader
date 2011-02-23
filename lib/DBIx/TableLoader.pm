@@ -660,14 +660,17 @@ I tried to make this module a base class to be able to handle various formats.
 =head1 TODO
 
 =for :list
+* Execute C<load()> in a transaction (if configured)
 * Complement C<map_rows> with C<grep_rows> to filter which rows get inserted
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
 * Option to pre-scan the data to guess appropriate data types for each column
+* Make a SQLite function so that you could call this from a C<dbish> command line?
 
 =head1 SEE ALSO
 
+=for :list
 * L<DBIx::TableLoader::CSV>
 
 =cut
