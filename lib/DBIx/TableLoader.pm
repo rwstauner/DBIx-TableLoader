@@ -9,6 +9,10 @@ package DBIx::TableLoader;
 
 	# interact with new database table full of data in $dbh
 
+In most cases simply calling C<load()> is sufficient,
+but all methods are documented below in case you are curious
+or want to do something a little trickier.
+
 =cut
 
 use strict;
