@@ -338,6 +338,7 @@ sub default_sql_data_type {
 This method goes through the C<columns> and converts any scalar
 column name to an arrayref of column name and C<default_column_type>.
 It modifies itself and returns nothing.
+It is called automatically from the constructor.
 
 =cut
 
