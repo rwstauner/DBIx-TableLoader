@@ -22,74 +22,18 @@ use Carp qw(croak);
 
 =method new
 
-Create a new instance.
+Create a new instance.  Accepts a hash or hashref of options.
 
-The module is very configurable but tries to guess good defaults
+This module is very configurable but tries to use good defaults
 in the hopes that you won't need to configure too much in most cases.
 
-Options:
+Most likely needed options:
 
 =for :list
-* C<create> - Boolean; Whether or not to perform the C<CREATE TABLE> statement.
-Defaults to true.
-* C<catalog> - Table catalog;
-Passed to L<DBI/quote_identifier> to get the full, quoted table name.
-None by default.
-* C<columns> - Arrayref of column definitions;
-Each element can be an arrayref of column name and data type
-or just a string for the column name and L</default_column_type> will be used.
-* C<create_prefix> - The opening of the SQL statement;
-See L</create_prefix>.  Overwrite if you need something more complex.
-* C<create_sql> - The C<CREATE TABLE> statement;
-See L</create_sql>.  Overwrite if you need something more complex.
-* C<create_suffix> - The closing of the SQL statement;
-See L</create_suffix>.  Overwrite if you need something more complex.
-* C<data> - An arrayref of arrayrefs of data to populate the table;
-Subclasses may define more appropriate options and ignore this parameter.
-* C<dbh> - A database handle as returned by C<< DBI->connect() >>
-* C<default_column_type> - The default data type that will be used for each
-column that does not define an explicit data type;
-The default will be guessed from the database driver
-using C<default_sql_data_type>.  See L</default_column_type>.
-* C<default_sql_data_type> - Default SQL standard data type;
-If C<default_column_type> is not supplied it will be determined by
-asking the database driver for a type corresponding to C<DBI::SQL_LONGVARCHAR>.
-Alternate values can be passed (C<DBI::SQL_VARCHAR()> for instance).
-See L</default_sql_data_type>.
-* C<drop> - Boolean;
-Whether or not to execute a C<DROP> statement before C<CREATE TABLE>;
-Defaults to false.  Set it to true if the named table already exists and you
-want to recreate it.
-* C<drop_prefix> - The opening of the SQL statement;
-See L</drop_prefix>.  Overwrite if you need something more complex.
-* C<drop_sql> - The C<DROP TABLE> statement;
-Will be constructed if not provided.  See L</drop_sql>.
-* C<drop_suffix> - The closing of the SQL statement;
-See L</drop_suffix>.  Overwrite if you need something more complex.
-* C<each_row> - A sub (coderef) to filter/mangle a row before use;
-It will receive the arrayref in C<$_[0]> and should return an arrayref.
-The object will be passed as C<$_[1]> in case you want.
-* C<get_row> - A sub (coderef) that will override L</get_raw_row>;
-You can use this if your input data is in a different format
-than the module expects (to split a string into an arrayref, for instance).
-This is called as a method so the object will be C<$_[0]>.
-The return value will be passed to C<each_row> if both are present.
-* C<name> - Table name; Defaults to 'data'.
-Subclasses may provide a more useful default.
-* C<name_prefix> - String prepended to table name;
-Probably mostly useful in subclasses where C<name> is determined automatically.
-* C<name_suffix> - String appended to table name.
-Probably mostly useful in subclasses where C<name> is determined automatically.
-* C<quoted_name> - Full table name, properly quoted;  Only necessary if you need
-something more complicated than
-C<< $dbh->quote_identifier($catalog, $schema, $table) >>
-(see L<DBI/quote_identifier>).
-* C<schema> - Table schema;
-Passed to L<DBI/quote_identifier> to get the full, quoted table name.
-None by default.
-* C<table_type> - String that will go before C<TABLE> in C<create_prefix>.
-C<TEMPORARY> would be an example of a useful value.
-This is probably database driver dependent, so use an appropriate value.
+* C<dbh> - A B<d>ataB<b>ase B<h>andle as returned by C<< DBI->connect() >>
+* C<data> - An arrayref of arrayrefs of data (which will be the input records)
+
+See L</OPTIONS> for the full list.
 
 =cut
 
@@ -622,6 +566,137 @@ interface for taking a set of data and loading it into a database table.
 Common uses would be to take data from a file (like a CSV)
 and load it into a SQLite table.
 (For that specific case see L<DBIx::TableLoader::CSV>.)
+
+=head1 OPTIONS
+
+This module is very [excessively] configurable.
+In most cases the default values will be sufficient,
+but you should be able to customize the object to fit your needs.
+
+Frequently Used Options:
+
+=begin :list
+
+* C<columns> - Arrayref of column definitions
+Each element can be an arrayref of column name and data type
+or just a string for the column name and L</default_column_type> will be used.
+If not passed in the first row of C<data> will be assumed to be column names.
+
+	columns => ['first_name', 'last_name', ['last_seen', 'date']]
+
+* C<dbh> - A database handle as returned by C<< DBI->connect() >>
+This module probably isn't useful without one.
+
+* C<data> - An arrayref of arrayrefs of data to populate the table;
+Subclasses may define more appropriate options and ignore this parameter.
+If you're using this base class, you'll probably need this
+(unless you provide your own C<get_row> coderef).
+
+	data => [ ['polar', 'bear', '2010-08-15'], ['blue', 'duck', '2009-07-30'] ]
+
+=end :list
+
+Less common options that are available when you desire extra tweaking power:
+
+=begin :list
+
+* C<create> - Boolean; Whether or not to perform the C<CREATE TABLE> statement
+Defaults to true.
+
+* C<default_column_type> - Default data type for each column
+This will be used for each column that does not explicitly define a data type.
+The default will be determined from the database driver
+using C<default_sql_data_type>.  See L</default_column_type>.
+
+	default_column_type => 'CHAR(50)'
+
+* C<drop> - Boolean to execute a C<DROP TABLE> statement before C<CREATE TABLE>
+Defaults to false.  Set it to true if the named table already exists and you
+want to recreate it.
+
+* C<get_row> - A sub (coderef) that will override L</get_raw_row>
+You can use this if your input data is in a different format
+than the module expects (to split a string into an arrayref, for instance).
+This is called like a method (the object will be C<$_[0]>).
+The return value will be passed to C<map_rows> if both are present.
+
+	# each record is a line from a log file;
+	# use the m// operator in list context to capture desired fields
+	get_row => sub { my $s = <$io>; [ $s =~ m/^(\d+)\s+"([^"]+)"\s+(\S+)$/ ] }
+
+C<NOTE>: If you use C<get_row> and don't pass C<data>
+you will probably want to pass C<columns>
+(otherwise columns will be taken from the first call to C<get_row>).
+
+* C<map_rows> - A sub (coderef) to filter/mangle a row before use
+Named after the builtin C<map> function.
+It will receive the row as arrayref in C<$_[0]> and should return an arrayref.
+(The row will also be available in C<$_>
+for consistency with the builtin C<map>.)
+The object will be passed as C<$_[1]> in case you want it.
+
+	map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
+
+	map_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+
+* C<name> - Table name
+Defaults to C<'data'>.  Subclasses may provide a more useful default.
+
+* C<table_type> - String that will go before C<TABLE> in L</create_prefix>
+A useful value might be C<TEMPORARY> or C<TEMP>.
+This is probably database driver dependent, so use an appropriate value.
+
+=end :list
+
+Options that will seldom be necessary
+but are available for completeness and/or consistency:
+
+=begin :list
+
+* C<catalog> - Table catalog
+Passed to L<DBI/quote_identifier> to get the full, quoted table name.
+None by default.
+
+* C<create_prefix> - The opening of the SQL statement
+See L</create_prefix>.  Overwrite if you need something more complex.
+
+* C<create_sql> - The C<CREATE TABLE> statement
+See L</create_sql>.  Overwrite if you need something more complex.
+
+* C<create_suffix> - The closing of the SQL statement
+See L</create_suffix>.  Overwrite if you need something more complex.
+
+* C<default_sql_data_type> - Default SQL standard data type
+If C<default_column_type> is not supplied it will be determined by
+asking the database driver for a type corresponding to C<DBI::SQL_LONGVARCHAR>.
+Alternate values can be passed (C<DBI::SQL_VARCHAR()> for instance).
+See L</default_sql_data_type>.
+
+* C<drop_prefix> - The opening of the SQL statement
+See L</drop_prefix>.  Overwrite if you need something more complex.
+
+* C<drop_sql> - The C<DROP TABLE> statement
+Will be constructed if not provided.  See L</drop_sql>.
+
+* C<drop_suffix> - The closing of the SQL statement
+See L</drop_suffix>.  Overwrite if you need something more complex.
+
+* C<name_prefix> - String prepended to table name
+Probably mostly useful in subclasses where C<name> is determined automatically.
+
+* C<name_suffix> - String appended to table name
+Probably mostly useful in subclasses where C<name> is determined automatically.
+
+* C<quoted_name> - Full table name, properly quoted
+Only necessary if you need something more complicated than
+C<< $dbh->quote_identifier($catalog, $schema, $table) >>
+(see L<DBI/quote_identifier>).
+
+* C<schema> - Table schema
+Passed to L<DBI/quote_identifier> to get the full, quoted table name.
+None by default.
+
+=end :list
 
 =head1 SUBCLASSING
 
