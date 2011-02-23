@@ -298,7 +298,7 @@ Columns that have not been given an explicit data type
 will be defined using the C<default_column_type>.
 
 You can pass a value explicitly to the constructor,
-or it will try to guess an appropriate (string) type
+or it will try to determine an appropriate (string) type
 based on the database driver (using L</default_sql_data_type>).
 
 If all else fails it will default to C<text>
@@ -637,7 +637,7 @@ Subclasses will likely want to override the following methods:
 * L</defaults> - a hashref of additional acceptable options (and default values)
 * L</default_name> - if you can determine a good default name from the input
 * L</get_raw_row> - to return the next row of data
-* L</prepare_data> - to initialize your object/data (open the file, etc)
+* L</prepare_data> - to initialize your object/data (open the file, etc.)
 
 Be sure to check out the code for L<DBIx::TableLoader::CSV>.
 Also see a very simple example in F<t/subclass.t>.
@@ -645,13 +645,13 @@ Also see a very simple example in F<t/subclass.t>.
 =head1 RATIONALE
 
 It seemed frequent that I would find a data set that was difficult to
-view/analyze (CSV, log file, etc) and would prefer to load it into a database
+view/analyze (CSV, log file, etc.) and would prefer to load it into a database
 for its powerful, familiar processing abilities.
 
 I once chose to use MySQL because its built-in C<LOAD DATA> command
 read the malformed CSV I was given and SQLite's C<.import> command did not.
 
-I wrote this module so that I'd never have to make such a terrible choice again.
+I wrote this module so that I'd never have to make such a choice again.
 I wanted to be able to use the power of L<Text::CSV> to make sure I could
 take any CSV I ever got and load it into SQLite easily.
 
