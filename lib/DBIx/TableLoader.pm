@@ -3,10 +3,11 @@ package DBIx::TableLoader;
 
 =head1 SYNOPSIS
 
-	my $dbh = DBI->connect('dbi:SQLite:dbname=:memory:');
-	my $loader = DBIx::TableLoader->new(dbh => $dbh, data => $data);
-	$loader->load();
-	# interact with new database table full of data
+	my $dbh = DBI->connect(@connection_args);
+
+	DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
+
+	# interact with new database table full of data in $dbh
 
 =cut
 
