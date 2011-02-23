@@ -291,7 +291,7 @@ or it will try to guess an appropriate (string) type
 based on the database driver (using L</default_sql_data_type>).
 
 If all else fails it will default to C<text>
-(which works for C<SQLite>, C<PostgreSQL>, C<MySQL>, and some others).
+(which works for SQLite, PostgreSQL, MySQL, and some others).
 
 =cut
 
@@ -626,12 +626,12 @@ It seemed frequent that I would find a dataset that was difficult to
 view/analyze (CSV, log file, etc) and would prefer to load it into a database
 for its powerful, familiar processing abilities.
 
-I once chose to use C<MySQL> because its built-in C<LOAD DATA> command
-read the malformed CSV I was given and C<SQLite>'s C<.import> command did not.
+I once chose to use MySQL because its built-in C<LOAD DATA> command
+read the malformed CSV I was given and SQLite's C<.import> command did not.
 
 I wrote this module so that I'd never have to make such a terrible choice again.
 I wanted to be able to use the power of L<Text::CSV> to make sure I could
-take any CSV I ever got and load it into C<SQLite> easily.
+take any CSV I ever got and load it into SQLite easily.
 
 I tried to make this module a base class to be able to handle various formats.
 
