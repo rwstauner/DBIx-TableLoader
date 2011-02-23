@@ -395,7 +395,7 @@ sub drop_prefix {
 =method drop_sql
 
 Generates the SQL for the C<DROP TABLE> statement
-by concatenating L<drop_prefix>, L</quoted_name>, and L<drop_suffix>.
+by concatenating L</drop_prefix>, L</quoted_name>, and L</drop_suffix>.
 
 Alternatively C<drop_sql> can be set in the constructor
 if you need something more complex.
@@ -431,6 +431,8 @@ Subclasses will override this method according to the input data format.
 
 This is called from L</get_row> to retrieve the next row of raw data.
 
+It should return C<undef> when there are no more rows.
+
 =cut
 
 sub get_raw_row {
@@ -446,7 +448,7 @@ sub get_raw_row {
 	my $row = $loader->get_row();
 
 Returns a single row of data at a time (as an arrayref).
-This method will be called repeatedly until it returns undef.
+This method will be called repeatedly until it returns C<undef>.
 The returned arrayref will be flattened and passed to L<DBI/execute>.
 
 =cut
