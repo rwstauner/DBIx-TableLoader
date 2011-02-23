@@ -164,6 +164,9 @@ sub defaults {
 
 =method columns
 
+	my $columns = $loader->columns;
+	# [ ['column1', 'data type'], ['column two', 'data type'] ]
+
 Returns an arrayref of the columns.
 Each element is an arrayref of column name and column data type.
 
@@ -176,6 +179,9 @@ sub columns {
 }
 
 =method column_names
+
+	my $column_names = $loader->column_names;
+	# ['column1', 'column two']
 
 Returns an arrayref of the column names.
 
@@ -505,7 +511,7 @@ sub insert_all {
 
 =method load
 
-	my $count = $loader->load();
+	my $number_of_rows = $loader->load();
 
 Load data into database table.
 This is a wrapper that does the most commonly needed things
@@ -581,6 +587,9 @@ sub quoted_name {
 }
 
 =method quoted_column_names
+
+	my $quoted_names = $loader->quoted_column_names();
+	# ['"column1"', '"column two"']
 
 Returns an arrayref of column names quoted by the database driver.
 
