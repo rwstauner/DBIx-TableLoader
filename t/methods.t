@@ -81,22 +81,22 @@ foreach my $test (
 		[0, 0, 0],
 	]],
 	# modify each row
-	[ each_row => [each_row => sub { [map { $_ . $_ } @{ $_[0] }] }], [
+	[ map_rows => [map_rows => sub { [map { $_ . $_ } @{ $_[0] }] }], [
 		[qw(11 22 33)],
 		[qw(aa bb cc)],
 		[qw(00 00 00)],
 	]],
 	# stupid example of alternate get_row... not useful, but it works
-	# (each_row would more appropriately do the same thing)
+	# (map_rows would more appropriately do the same thing)
 	[ get_row =>  [get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }], [
 		[3, 2, 1],
 		[qw(c b a)],
 		[0, 0, 0],
 	]],
 	# example of both
-	[ get_row_each_row =>  [
+	[ get_row_map_rows =>  [
 			get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] },
-			each_row => sub { [map { join('', ($_) x 3) } @{ $_[0] }] }], [
+			map_rows => sub { [map { join('', ($_) x 3) } @{ $_[0] }] }], [
 		[qw(333 222 111)],
 		[qw(ccc bbb aaa)],
 		[qw(000 000 000)],

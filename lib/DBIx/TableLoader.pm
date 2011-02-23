@@ -139,7 +139,7 @@ sub base_defaults {
 		drop_prefix          => '',
 		drop_sql             => '',
 		drop_suffix          => '',
-		each_row             => undef,
+		map_rows             => undef,
 		get_row              => undef,
 		# default_name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults()
@@ -449,11 +449,11 @@ sub get_row {
 		? $self->{get_row}->($self)
 		: $self->get_raw_row();
 
-	# If a row was found pass it through the each_row sub (if we have one).
+	# If a row was found pass it through the map_rows sub (if we have one).
 	# Send the row first since it's the important part.
 	# This isn't a method call, and $self will likely be seldom used.
-	$row &&= $self->{each_row}->($row, $self)
-		if $self->{each_row};
+	$row &&= $self->{map_rows}->($row, $self)
+		if $self->{map_rows};
 
 	return $row;
 }
@@ -639,6 +639,7 @@ I tried to make this module a base class to be able to handle various formats.
 =head1 TODO
 
 =for :list
+* Complement C<map_rows> with C<grep_rows> to filter which rows get inserted
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
