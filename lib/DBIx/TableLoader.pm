@@ -596,7 +596,7 @@ sub quoted_column_names {
 
 1;
 
-=for stopwords CSV SQLite TODO dataset arrayrefs
+=for stopwords CSV SQLite PostgreSQL MySQL TODO arrayrefs
 
 =head1 DESCRIPTION
 
@@ -628,7 +628,7 @@ Also see a very simple example in F<t/subclass.t>.
 
 =head1 RATIONALE
 
-It seemed frequent that I would find a dataset that was difficult to
+It seemed frequent that I would find a data set that was difficult to
 view/analyze (CSV, log file, etc) and would prefer to load it into a database
 for its powerful, familiar processing abilities.
 
@@ -648,7 +648,7 @@ I tried to make this module a base class to be able to handle various formats.
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
-* Option for pre-scanning the data to guess appropriate data types for each column
+* Option to pre-scan the data to guess appropriate data types for each column
 
 =head1 SEE ALSO
 
