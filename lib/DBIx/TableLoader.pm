@@ -410,7 +410,7 @@ sub get_row {
 	# Send the row first since it's the important part.
 	# This isn't a method call, and $self will likely be seldom used.
 	if( $row && $self->{map_rows} ){
-		# localize $_ to the $row for consistency with the builtin map()
+		# localize $_ to the $row for consistency with the built in map()
 		local $_ = $row;
 		# also pass row as the first argument to simulate a normal function call
 		$row = $self->{map_rows}->($row, $self);
@@ -629,10 +629,10 @@ you will probably want to pass C<columns>
 (otherwise columns will be taken from the first call to C<get_row>).
 
 * C<map_rows> - A sub (coderef) to filter/mangle a row before use
-Named after the builtin C<map> function.
+Named after the built in C<map> function.
 It will receive the row as arrayref in C<$_[0]> and should return an arrayref.
 (The row will also be available in C<$_>
-for consistency with the builtin C<map>.)
+for consistency with the built in C<map>.)
 The object will be passed as C<$_[1]> in case you want it.
 
 	map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
@@ -723,8 +723,8 @@ It seemed frequent that I would find a data set that was difficult to
 view/analyze (CSV, log file, etc.) and would prefer to load it into a database
 for its powerful, familiar processing abilities.
 
-I once chose to use MySQL because its built-in C<LOAD DATA> command
-read the malformed CSV I was given and SQLite's C<.import> command did not.
+I once chose to use MySQL because its built in C<LOAD DATA> command
+read the malformed CSV I was given and the C<.import> command in SQLite did not.
 
 I wrote this module so that I'd never have to make such a choice again.
 I wanted to be able to use the power of L<Text::CSV> to make sure I could
@@ -740,7 +740,7 @@ I tried to make this module a base class to be able to handle various formats.
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated
-* Option to pre-scan the data to guess appropriate data types for each column
+* Option to scan the data to guess appropriate data types for each column
 * Make a SQLite function so that you could call this from a C<dbish> command line?
 
 =head1 SEE ALSO
