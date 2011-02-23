@@ -86,6 +86,12 @@ foreach my $test (
 		[qw(aa bb cc)],
 		[qw(00 00 00)],
 	]],
+	# example from POD (using $_)
+	[ uppercase_example => [map_rows => sub { [ map { uc $_ } @$_ ] }], [
+		[qw(1 2 3)],
+		[qw(A B C)],
+		[qw(0 0 0)],
+	]],
 	# stupid example of alternate get_row... not useful, but it works
 	# (map_rows would more appropriately do the same thing)
 	[ get_row =>  [get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }], [

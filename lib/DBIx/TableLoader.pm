@@ -452,8 +452,12 @@ sub get_row {
 	# If a row was found pass it through the map_rows sub (if we have one).
 	# Send the row first since it's the important part.
 	# This isn't a method call, and $self will likely be seldom used.
-	$row &&= $self->{map_rows}->($row, $self)
-		if $self->{map_rows};
+	if( $row && $self->{map_rows} ){
+		# localize $_ to the $row for consistency with the builtin map()
+		local $_ = $row;
+		# also pass row as the first argument to simulate a normal function call
+		$row = $self->{map_rows}->($row, $self);
+	}
 
 	return $row;
 }
