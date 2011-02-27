@@ -4,7 +4,12 @@ use Test::More 0.96;
 use Test::MockObject 1.09 ();
 
 my $driver_type;
+my ($commit, $begun);
+my $sth = Test::MockObject->new()->mock(execute => sub {});
 my $dbh = Test::MockObject->new()
+	->mock(commit => sub { ++$commit })
+	->mock(begin_work => sub { ++$begun })
+	->mock(do => sub {})->mock(prepare => sub { $sth })
 	->mock(type_info => sub { return {TYPE_NAME => $driver_type}; })
 	->mock(quote_identifier => sub { shift; join('.', map { qq["$_"] } grep { $_ } @_); });
 
@@ -142,6 +147,22 @@ foreach my $test (
 	my $loader = new_ok($mod, [columns => ['goo'], dbh => $dbh, @$attr]);
 	is($loader->name, $exp, 'expected name');
 	is($loader->quoted_name, qq{"$exp"}, 'expected quoted name');
+}
+
+# transaction
+{
+	my $args = [data => [[qw(a b)], [1, 2]], dbh => $dbh];
+	my $loader = new_ok($mod, [@$args]);
+	$commit = $begun = 0;
+	$loader->load;
+	is($begun,  1, 'transaction');
+	is($commit, 1, 'transaction');
+
+	$loader = new_ok($mod, [@$args, transaction => 0]);
+	$commit = $begun = 0;
+	$loader->load;
+	is($begun,  0, 'no transaction');
+	is($commit, 0, 'no transaction');
 }
 
 done_testing;

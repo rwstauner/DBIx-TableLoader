@@ -100,6 +100,7 @@ sub base_defaults {
 		quoted_name          => undef,
 		schema               => undef,
 		table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
+		transaction          => 1,
 	};
 }
 
@@ -470,6 +471,8 @@ sub insert_all {
 Load data into database table.
 This is a wrapper that does the most commonly needed things
 in a single method call.
+If the C<transaction> setting is true (default)
+the actions will be wrapped in a transaction.
 
 =for :list
 * L</drop> (if configured)
@@ -486,6 +489,8 @@ sub load {
 	# is it appropriate/sufficient to call prepare_data() from new()?
 
 	# TODO: transaction
+	$self->{dbh}->begin_work()
+		if $self->{transaction};
 
 	$self->drop()
 		if $self->{drop};
@@ -493,7 +498,12 @@ sub load {
 	$self->create()
 		if $self->{create};
 
-	return $self->insert_all();
+	my $rows = $self->insert_all();
+
+	$self->{dbh}->commit()
+		if $self->{transaction};
+
+	return $rows;
 }
 
 =method name
@@ -649,6 +659,10 @@ Defaults to C<'data'>.  Subclasses may provide a more useful default.
 A useful value might be C<TEMPORARY> or C<TEMP>.
 This is probably database driver dependent, so use an appropriate value.
 
+* C<transaction> - Boolean
+All the operations in L</load> will be wrapped in a transaction by default.
+Set this option to false to disable this.
+
 =end :list
 
 Options that will seldom be necessary
@@ -740,7 +754,6 @@ I tried to make this module a base class to be able to handle various formats.
 This is more of a list of ideas than features that are planned.
 
 =for :list
-* Execute C<load()> in a transaction (if configured)
 * Complement C<map_rows> with C<grep_rows> to filter which rows get inserted
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
