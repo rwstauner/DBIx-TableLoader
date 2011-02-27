@@ -18,7 +18,7 @@ my $dbh;
 ##}
 
 {
-	package
+	package # shh...
 		DTL_Log;
 	@DTL_Log::ISA = $mod;
 	sub defaults {
