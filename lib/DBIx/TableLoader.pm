@@ -737,6 +737,8 @@ I tried to make this module a base class to be able to handle various formats.
 
 =head1 TODO
 
+This is more of a list of ideas than features that are planned.
+
 =for :list
 * Execute C<load()> in a transaction (if configured)
 * Complement C<map_rows> with C<grep_rows> to filter which rows get inserted
