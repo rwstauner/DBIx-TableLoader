@@ -747,6 +747,7 @@ This is more of a list of ideas than features that are planned.
 * Allow extra columns (like C<id>) to be added and/or generated
 * Option to scan the data to guess appropriate data types for each column
 * Make a SQLite function so that you could call this from a C<dbish> command line?
+* Allow C<UPDATE> statements and specify the key columns (for the C<WHERE> clause)
 
 =head1 SEE ALSO
 
