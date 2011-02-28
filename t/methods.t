@@ -80,56 +80,58 @@ foreach my $args (
 my $get_row_override_data = {cat => [qw(meow string)], dog => [qw(bark squirrel)], bear => [qw(grr picnicbasket)]};
 foreach my $test (
 	# normal behavior
-	[ simple => [], [
+	[ simple => {}, [
 		[1, 2, 3],
 		[qw(a b c)],
 		[0, 0, 0],
 	]],
 	# modify each row
-	[ map_rows => [map_rows => sub { [map { $_ . $_ } @{ $_[0] }] }], [
+	[ map_rows => {map_rows => sub { [map { $_ . $_ } @{ $_[0] }] }}, [
 		[qw(11 22 33)],
 		[qw(aa bb cc)],
 		[qw(00 00 00)],
 	]],
 	# example from POD (using $_)
-	[ uppercase_example => [map_rows => sub { [ map { uc $_ } @$_ ] }], [
+	[ uppercase_example => {map_rows => sub { [ map { uc $_ } @$_ ] }}, [
 		[qw(1 2 3)],
 		[qw(A B C)],
 		[qw(0 0 0)],
 	]],
 	# stupid example of alternate get_row... not useful, but it works
 	# (map_rows would more appropriately do the same thing)
-	[ get_row =>  [get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }], [
+	[ get_row =>  {get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }}, [
 		[3, 2, 1],
 		[qw(c b a)],
 		[0, 0, 0],
-	]],
+	], [qw(c b a)]],
 	# example of both
-	[ get_row_map_rows =>  [
+	[ get_row_map_rows =>  {
 			get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] },
-			map_rows => sub { [map { join('', ($_) x 3) } @{ $_[0] }] }], [
+			map_rows => sub { [map { join('', ($_) x 3) } @{ $_[0] }] }}, [
 		[qw(333 222 111)],
 		[qw(ccc bbb aaa)],
 		[qw(000 000 000)],
-	]],
+	], [qw(c b a)]],
 	# more useful get_row... using an alternate input data format
-	[ alt_get_row => [
+	[ alt_get_row => {
 			data => undef,
 			columns => [qw(animal says chases)],
-			get_row => sub { my ($an, $ar) = each %$get_row_override_data; $ar && [$an x 2, @$ar] }], [
+			get_row => sub { my ($an, $ar) = each %$get_row_override_data; $ar && [$an x 2, @$ar] }}, [
 		# map keys() so that the data comes out in the same order
 		map { [$_ x 2, @{$$get_row_override_data{$_}}] } keys %$get_row_override_data,
 	]],
 ){
-	my ($title, $over, $exp) = @$test;
+	my ($title, $over, $exp, $columns) = @$test;
+	$columns ||= $over->{columns} || [qw(a b c)];
 	my $args = [dbh => $dbh, data => [ [qw(a b c)],
 		[1, 2, 3],
 		[qw(a b c)],
 		[0, 0, 0],
 	]];
 
-	my $loader = new_ok($mod, [@$args, @$over]);
+	my $loader = new_ok($mod, [@$args, %$over]);
 
+	is_deeply($loader->column_names, $columns, "$title: column names");
 	is_deeply($loader->get_row, $_, "$title: get_row")
 		foreach @$exp;
 
