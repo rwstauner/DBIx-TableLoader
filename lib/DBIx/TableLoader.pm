@@ -90,8 +90,9 @@ sub base_defaults {
 		drop_prefix          => '',
 		drop_sql             => '',
 		drop_suffix          => '',
-		map_rows             => undef,
 		get_row              => undef,
+		grep_rows            => undef,
+		map_rows             => undef,
 		# default_name() method will default to 'data' if 'name' is blank
 		# this way subclasses don't have to override this value in defaults()
 		name                 => '',
@@ -127,7 +128,8 @@ Each element is an arrayref of column name and column data type.
 sub columns {
 	my ($self) = @_;
 	# by default the column names are found in the first row of the data
-	return $self->{columns} ||= $self->get_row();
+	# (but circumvent get_row() to avoid any grep or map subs)
+	return $self->{columns} ||= $self->_get_custom_or_raw_row();
 }
 
 =method column_names
@@ -373,6 +375,18 @@ sub drop_suffix {
 	return $self->{drop_suffix};
 }
 
+# call get_raw_row unless a custom 'get_row' is defined
+# (this is the essence of get_row() but without the grep/map subs)
+
+sub _get_custom_or_raw_row {
+	my ($self) = @_;
+	# considered { $self->{get_row} ||= $self->can('get_raw_row'); } in new()
+	# but it just seemed a little strange... this is more normal/clear
+	return $self->{get_row}
+	     ? $self->{get_row}->($self)
+	     : $self->get_raw_row();
+}
+
 =method get_raw_row
 
 Subclasses will override this method according to the input data format.
@@ -403,12 +417,18 @@ The returned arrayref will be flattened and passed to L<DBI/execute>.
 
 sub get_row {
 	my ($self) = @_;
+	my $row;
 
-	# considered { $self->{get_row} ||= $self->can('get_raw_row'); } in new()
-	# but it just seemed a little strange... this is more normal/clear
-	my $row = $self->{get_row}
-		? $self->{get_row}->($self)
-		: $self->get_raw_row();
+	GETROW: {
+		$row = $self->_get_custom_or_raw_row();
+		# call grep_rows with the same semantics as map_rows (below)
+		if( $row && $self->{grep_rows} ){
+			local $_ = $row;
+			# if grep returns false try the block again
+			redo GETROW
+				unless $self->{grep_rows}->($row, $self);
+		}
+	}
 
 	# If a row was found pass it through the map_rows sub (if we have one).
 	# Send the row first since it's the important part.
@@ -641,12 +661,27 @@ C<NOTE>: If you use C<get_row> and don't pass C<data>
 you will probably want to pass C<columns>
 (otherwise columns will be taken from the first call to C<get_row>).
 
+* C<grep_rows> - A sub (coderef) to determine if a row should be used or skipped
+Named after the built in C<grep> function.
+It will receive the row as an arrayref in C<$_[0]>.
+(The row will also be available in C<$_>
+for consistency with the built in C<grep>.)
+The object will be passed as C<$_[1]> in case you want it.
+If it returns a true value the row will be used.
+If it returns false the next row will be fetched and the process will repeat
+(until all rows have been exhausted).
+
+	grep_rows => sub { $_->[1] =~ /something/ } # accept the row if it matches
+
+	grep_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+
 * C<map_rows> - A sub (coderef) to filter/mangle a row before use
 Named after the built in C<map> function.
-It will receive the row as arrayref in C<$_[0]> and should return an arrayref.
+It will receive the row as an arrayref in C<$_[0]>.
 (The row will also be available in C<$_>
 for consistency with the built in C<map>.)
 The object will be passed as C<$_[1]> in case you want it.
+It should return an arrayref (which will be used as the row).
 
 	map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
 
@@ -754,7 +789,6 @@ I tried to make this module a base class to be able to handle various formats.
 This is more of a list of ideas than features that are planned.
 
 =for :list
-* Complement C<map_rows> with C<grep_rows> to filter which rows get inserted
 * Allow a custom column name transformation sub to be passed in
 * Use L<String::CamelCase/decamelize> by default?
 * Allow extra columns (like C<id>) to be added and/or generated

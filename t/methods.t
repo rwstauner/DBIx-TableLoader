@@ -99,6 +99,7 @@ foreach my $test (
 	]],
 	# stupid example of alternate get_row... not useful, but it works
 	# (map_rows would more appropriately do the same thing)
+	# NOTE: columns are reversed because we're using get_row rather than map_rows
 	[ get_row =>  {get_row  => sub { [reverse @{ shift @{ $_[0]->{data} } || return undef }] }}, [
 		[3, 2, 1],
 		[qw(c b a)],
@@ -119,6 +120,18 @@ foreach my $test (
 			get_row => sub { my ($an, $ar) = each %$get_row_override_data; $ar && [$an x 2, @$ar] }}, [
 		# map keys() so that the data comes out in the same order
 		map { [$_ x 2, @{$$get_row_override_data{$_}}] } keys %$get_row_override_data,
+	]],
+	# filter some out
+	[ grep_rows => {grep_rows => sub { $_->[1] =~ /^\d+$/ }}, [
+		[qw(1 2 3)],
+		[qw(0 0 0)],
+	]],
+	# grep then map
+	[ grep_map_rows => {
+			grep_rows => sub { $_->[1] },
+			map_rows => sub { [map { ord($_) } @$_] }}, [
+		[qw(49 50 51)],
+		[qw(97 98 99)],
 	]],
 ){
 	my ($title, $over, $exp, $columns) = @$test;
