@@ -6,7 +6,7 @@ use Test::More 0.96;
 # test an actual use-case
 
 eval 'require DBD::SQLite'
-  or plan skip_all => 'DBD::SQLite required for this author test';
+  or plan skip_all => 'DBD::SQLite required for these tests';
 
 use DBIx::TableLoader;
 my $dbh = DBI->connect('dbi:SQLite:dbname=:memory:');

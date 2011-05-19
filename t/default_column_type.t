@@ -2,11 +2,11 @@
 use strict;
 use warnings;
 use Test::More 0.96;
-eval 'require DBI'
-  or plan skip_all => "DBI required for this author test";
 
-my $mod = 'DBIx::TableLoader';
-eval "require $mod" or die $@;
+eval 'require DBI'
+  or plan skip_all => 'DBI required for these tests';
+
+use DBIx::TableLoader;
 
 # These tests are fragile as the databases/drivers could change things.
 # This script was only to make sure the code in the module was correct...
@@ -49,7 +49,7 @@ foreach my $test ( @tests ){
     my $dbh = DBI->connect("dbi:$dbd:$dsn", $user, $pass, \%attr)
       or plan skip_all => "DBI connection failed for $dbd.  " .
         "Set $e{dsn} and/or $e{userpass} to test with $dbd";
-    my $loader = new_ok($mod, [dbh => $dbh, columns => ['test']]);
+    my $loader = new_ok('DBIx::TableLoader', [dbh => $dbh, columns => ['test']]);
 
     foreach my $i ( 0 .. $#types ){
       is($loader->_data_type_from_driver($types[$i]), $$exp[$i], 'db data type');
