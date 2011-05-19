@@ -2,7 +2,7 @@ Revision history for DBIx-TableLoader
 
 {{$NEXT}}
 
-  - Move DBI tests from xt/author/ to t/
+  - Make DBI tests regular tests rather than author tests
   - Superficial dist/release changes
 
 1.000     2011-02-28T04:13:37Z
