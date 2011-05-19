@@ -1,4 +1,7 @@
 # vim: set ts=2 sts=2 sw=2 expandtab smarttab:
+use strict;
+use warnings;
+
 package DBIx::TableLoader;
 # ABSTRACT: Easily load a database table from a data set
 
@@ -19,8 +22,6 @@ See L</OPTIONS> for the full list.
 
 =cut
 
-use strict;
-use warnings;
 use Carp qw(croak);
 #use DBI 1.13 (); # oldest DBI on CPAN as of 2011-02-15; Has SQL_LONGVARCHAR
 
