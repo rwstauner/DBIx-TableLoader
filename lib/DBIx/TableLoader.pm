@@ -1,13 +1,14 @@
+# vim: set ts=2 sts=2 sw=2 expandtab smarttab:
 package DBIx::TableLoader;
 # ABSTRACT: Easily load a database table from a data set
 
 =head1 SYNOPSIS
 
-	my $dbh = DBI->connect(@connection_args);
+  my $dbh = DBI->connect(@connection_args);
 
-	DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
+  DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
 
-	# interact with new database table full of data in $dbh
+  # interact with new database table full of data in $dbh
 
 In most cases simply calling C<load()> is sufficient,
 but all methods are documented below in case you are curious
@@ -41,29 +42,29 @@ See L</OPTIONS> for the full list.
 =cut
 
 sub new {
-	my $class = shift;
-	my $self = bless {}, $class;
+  my $class = shift;
+  my $self = bless {}, $class;
 
-	my %opts = @_ == 1 ? %{$_[0]} : @_;
+  my %opts = @_ == 1 ? %{$_[0]} : @_;
 
-	my %defaults = (%{ $self->base_defaults }, %{ $self->defaults });
-	while( my ($key, $value) = each %defaults ){
-		$self->{$key} = exists($opts{$key})
-			? delete $opts{$key}
-			: $value;
-	}
+  my %defaults = (%{ $self->base_defaults }, %{ $self->defaults });
+  while( my ($key, $value) = each %defaults ){
+    $self->{$key} = exists($opts{$key})
+      ? delete $opts{$key}
+      : $value;
+  }
 
-	# be loud about typos
-	croak("Unknown options: ${\join(', ', keys %opts)}")
-		if %opts;
+  # be loud about typos
+  croak("Unknown options: ${\join(', ', keys %opts)}")
+    if %opts;
 
-	# custom routine to handle type of input data (hook for subclasses)
-	$self->prepare_data();
+  # custom routine to handle type of input data (hook for subclasses)
+  $self->prepare_data();
 
-	# normalize 'columns' attribute
-	$self->determine_column_types();
+  # normalize 'columns' attribute
+  $self->determine_column_types();
 
-	return $self;
+  return $self;
 }
 
 =method base_defaults
@@ -74,35 +75,35 @@ and their default values.
 =cut
 
 sub base_defaults {
-	return {
-		catalog              => undef,
-		columns              => undef,
-		create               => 1,
-		create_prefix        => '',
-		create_sql           => '',
-		create_suffix        => '',
-		# 'data' attribute may not be useful in subclasses
-		data                 => undef,
-		dbh                  => undef,
-		default_column_type  => '',
-		default_sql_data_type => '',
-		drop                 => 0,
-		drop_prefix          => '',
-		drop_sql             => '',
-		drop_suffix          => '',
-		get_row              => undef,
-		grep_rows            => undef,
-		map_rows             => undef,
-		# default_name() method will default to 'data' if 'name' is blank
-		# this way subclasses don't have to override this value in defaults()
-		name                 => '',
-		name_prefix          => '',
-		name_suffix          => '',
-		quoted_name          => undef,
-		schema               => undef,
-		table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
-		transaction          => 1,
-	};
+  return {
+    catalog              => undef,
+    columns              => undef,
+    create               => 1,
+    create_prefix        => '',
+    create_sql           => '',
+    create_suffix        => '',
+    # 'data' attribute may not be useful in subclasses
+    data                 => undef,
+    dbh                  => undef,
+    default_column_type  => '',
+    default_sql_data_type => '',
+    drop                 => 0,
+    drop_prefix          => '',
+    drop_sql             => '',
+    drop_suffix          => '',
+    get_row              => undef,
+    grep_rows            => undef,
+    map_rows             => undef,
+    # default_name() method will default to 'data' if 'name' is blank
+    # this way subclasses don't have to override this value in defaults()
+    name                 => '',
+    name_prefix          => '',
+    name_suffix          => '',
+    quoted_name          => undef,
+    schema               => undef,
+    table_type           => '', # TEMP, TEMPORARY, VIRTUAL?
+    transaction          => 1,
+  };
 }
 
 =method defaults
@@ -112,13 +113,13 @@ Returns a hashref of additional options defined by a subclass.
 =cut
 
 sub defaults {
-	return {};
+  return {};
 }
 
 =method columns
 
-	my $columns = $loader->columns;
-	# [ ['column1', 'data type'], ['column two', 'data type'] ]
+  my $columns = $loader->columns;
+  # [ ['column1', 'data type'], ['column two', 'data type'] ]
 
 Returns an arrayref of the columns.
 Each element is an arrayref of column name and column data type.
@@ -126,25 +127,25 @@ Each element is an arrayref of column name and column data type.
 =cut
 
 sub columns {
-	my ($self) = @_;
-	# by default the column names are found in the first row of the data
-	# (but circumvent get_row() to avoid any grep or map subs)
-	return $self->{columns} ||= $self->_get_custom_or_raw_row();
+  my ($self) = @_;
+  # by default the column names are found in the first row of the data
+  # (but circumvent get_row() to avoid any grep or map subs)
+  return $self->{columns} ||= $self->_get_custom_or_raw_row();
 }
 
 =method column_names
 
-	my $column_names = $loader->column_names;
-	# ['column1', 'column two']
+  my $column_names = $loader->column_names;
+  # ['column1', 'column two']
 
 Returns an arrayref of the column names.
 
 =cut
 
 sub column_names {
-	my ($self) = @_;
-	# return the first element of each arrayref
-	return [ map { $$_[0] } @{ $self->columns } ];
+  my ($self) = @_;
+  # return the first element of each arrayref
+  return [ map { $$_[0] } @{ $self->columns } ];
 }
 
 =method create
@@ -154,8 +155,8 @@ Executes a C<CREATE TABLE> SQL statement on the database handle.
 =cut
 
 sub create {
-	my ($self) = @_;
-	$self->{dbh}->do($self->create_sql);
+  my ($self) = @_;
+  $self->{dbh}->do($self->create_sql);
 }
 
 =method create_prefix
@@ -168,10 +169,10 @@ Defaults to C<< "CREATE $table_type TABLE $quoted_name (" >>.
 =cut
 
 sub create_prefix {
-	my ($self) = @_;
-	return $self->{create_prefix} ||=
-		"CREATE $self->{table_type} TABLE " .
-			$self->quoted_name . " (";
+  my ($self) = @_;
+  return $self->{create_prefix} ||=
+    "CREATE $self->{table_type} TABLE " .
+      $self->quoted_name . " (";
 }
 
 =method create_sql
@@ -186,18 +187,18 @@ Can be overridden in the constructor.
 =cut
 
 sub create_sql {
-	my ($self) = @_;
-	$self->{create_sql} ||=
-		join(' ',
-			$self->create_prefix,
+  my ($self) = @_;
+  $self->{create_sql} ||=
+    join(' ',
+      $self->create_prefix,
 
-			# column definitions (each element is: [name, data_type])
-			join(', ', map {
-				$self->{dbh}->quote_identifier($_->[0]) . ' ' . $_->[1]
-			} @{ $self->columns }),
+      # column definitions (each element is: [name, data_type])
+      join(', ', map {
+        $self->{dbh}->quote_identifier($_->[0]) . ' ' . $_->[1]
+      } @{ $self->columns }),
 
-			$self->create_suffix
-		);
+      $self->create_suffix
+    );
 }
 
 =method create_suffix
@@ -210,19 +211,19 @@ Defaults to C<< ")" >>.
 =cut
 
 sub create_suffix {
-	my ($self) = @_;
-	return $self->{create_suffix} ||=
-		')';
+  my ($self) = @_;
+  return $self->{create_suffix} ||=
+    ')';
 }
 
 # ask the driver what data type it uses for the desired SQL standard type
 
 sub _data_type_from_driver {
-	my ($self, $data_type) = @_;
-	if( my $type = $self->{dbh}->type_info($data_type) ){
-		return $type->{TYPE_NAME};
-	}
-	return;
+  my ($self, $data_type) = @_;
+  if( my $type = $self->{dbh}->type_info($data_type) ){
+    return $type->{TYPE_NAME};
+  }
+  return;
 }
 
 =method default_name
@@ -239,7 +240,7 @@ L</name_prefix> and L</name_suffix> in L</name>.
 =cut
 
 sub default_name {
-	return 'data';
+  return 'data';
 }
 
 =method default_column_type
@@ -257,12 +258,12 @@ If all else fails it will default to C<text>
 =cut
 
 sub default_column_type {
-	my ($self) = @_;
-	return $self->{default_column_type} ||= eval {
-		$self->_data_type_from_driver($self->default_sql_data_type);
-	}
-		# outside the eval in case there was an error
-		|| 'text';
+  my ($self) = @_;
+  return $self->{default_column_type} ||= eval {
+    $self->_data_type_from_driver($self->default_sql_data_type);
+  }
+    # outside the eval in case there was an error
+    || 'text';
 }
 
 =method default_sql_data_type
@@ -275,12 +276,12 @@ Defaults to C<DBI::SQL_LONGVARCHAR>.
 =cut
 
 sub default_sql_data_type {
-	my ($self) = @_;
-	$self->{default_sql_data_type} ||= eval {
-		# if this doesn't work default_column_type will just use 'text'
-		require DBI;
-		DBI::SQL_LONGVARCHAR();
-	};
+  my ($self) = @_;
+  $self->{default_sql_data_type} ||= eval {
+    # if this doesn't work default_column_type will just use 'text'
+    require DBI;
+    DBI::SQL_LONGVARCHAR();
+  };
 }
 
 =method determine_column_types
@@ -293,27 +294,27 @@ It is called automatically from the constructor.
 =cut
 
 sub determine_column_types {
-	my ($self) = @_;
-	my ($columns, $type) = ($self->columns, $self->default_column_type);
+  my ($self) = @_;
+  my ($columns, $type) = ($self->columns, $self->default_column_type);
 
-	croak("Unable to determine columns!")
-		unless $columns && @$columns;
+  croak("Unable to determine columns!")
+    unless $columns && @$columns;
 
-	# break reference
-	$columns = [@$columns];
+  # break reference
+  $columns = [@$columns];
 
-	# reset each element to an arrayref if it isn't already
-	foreach my $column ( @$columns ){
-		# upgrade lone string to arrayref otherwise break reference
-		$column = ref $column ? [@$column] : [$column];
-		# append column type if missing
-		push(@$column, $type)
-			unless @$column > 1;
-	}
+  # reset each element to an arrayref if it isn't already
+  foreach my $column ( @$columns ){
+    # upgrade lone string to arrayref otherwise break reference
+    $column = ref $column ? [@$column] : [$column];
+    # append column type if missing
+    push(@$column, $type)
+      unless @$column > 1;
+  }
 
-	# restore changes
-	$self->{columns} = $columns;
-	return;
+  # restore changes
+  $self->{columns} = $columns;
+  return;
 }
 
 =method drop
@@ -323,8 +324,8 @@ Execute the C<DROP TABLE> statement on the database handle.
 =cut
 
 sub drop {
-	my ($self) = @_;
-	$self->{dbh}->do($self->drop_sql);
+  my ($self) = @_;
+  $self->{dbh}->do($self->drop_sql);
 }
 
 =method drop_prefix
@@ -336,10 +337,10 @@ Defaults to C<DROP TABLE>.
 =cut
 
 sub drop_prefix {
-	my ($self) = @_;
-	# default to "DROP TABLE" since SQLite, PostgreSQL, and MySQL
-	# all accept it (rather than "DROP $table_type TABLE")
-	$self->{drop_prefix} ||= 'DROP TABLE';
+  my ($self) = @_;
+  # default to "DROP TABLE" since SQLite, PostgreSQL, and MySQL
+  # all accept it (rather than "DROP $table_type TABLE")
+  $self->{drop_prefix} ||= 'DROP TABLE';
 }
 
 =method drop_sql
@@ -353,12 +354,12 @@ if you need something more complex.
 =cut
 
 sub drop_sql {
-	my ($self) = @_;
-	return $self->{drop_sql} ||= join(' ',
-		$self->drop_prefix,
-		$self->quoted_name,
-		$self->drop_suffix,
-	);
+  my ($self) = @_;
+  return $self->{drop_sql} ||= join(' ',
+    $self->drop_prefix,
+    $self->quoted_name,
+    $self->drop_suffix,
+  );
 }
 
 =method drop_suffix
@@ -370,21 +371,21 @@ Nothing by default.
 =cut
 
 sub drop_suffix {
-	my ($self) = @_;
-	# default is blank
-	return $self->{drop_suffix};
+  my ($self) = @_;
+  # default is blank
+  return $self->{drop_suffix};
 }
 
 # call get_raw_row unless a custom 'get_row' is defined
 # (this is the essence of get_row() but without the grep/map subs)
 
 sub _get_custom_or_raw_row {
-	my ($self) = @_;
-	# considered { $self->{get_row} ||= $self->can('get_raw_row'); } in new()
-	# but it just seemed a little strange... this is more normal/clear
-	return $self->{get_row}
-	     ? $self->{get_row}->($self)
-	     : $self->get_raw_row();
+  my ($self) = @_;
+  # considered { $self->{get_row} ||= $self->can('get_raw_row'); } in new()
+  # but it just seemed a little strange... this is more normal/clear
+  return $self->{get_row}
+       ? $self->{get_row}->($self)
+       : $self->get_raw_row();
 }
 
 =method get_raw_row
@@ -398,16 +399,16 @@ It should return C<undef> when there are no more rows.
 =cut
 
 sub get_raw_row {
-	my ($self) = @_;
-	# It would be simpler to shift the data but I don't think it actually
-	# gains us anything.  This way we're not modifying anything unexpectedly.
-	# Besides subclasses will likely be more useful than this one.
-	return $self->{data}->[ $self->{row_index}++ ];
+  my ($self) = @_;
+  # It would be simpler to shift the data but I don't think it actually
+  # gains us anything.  This way we're not modifying anything unexpectedly.
+  # Besides subclasses will likely be more useful than this one.
+  return $self->{data}->[ $self->{row_index}++ ];
 }
 
 =method get_row
 
-	my $row = $loader->get_row();
+  my $row = $loader->get_row();
 
 Returns a single row of data at a time (as an arrayref).
 This method will be called repeatedly until it returns C<undef>.
@@ -416,31 +417,31 @@ The returned arrayref will be flattened and passed to L<DBI/execute>.
 =cut
 
 sub get_row {
-	my ($self) = @_;
-	my $row;
+  my ($self) = @_;
+  my $row;
 
-	GETROW: {
-		$row = $self->_get_custom_or_raw_row();
-		# call grep_rows with the same semantics as map_rows (below)
-		if( $row && $self->{grep_rows} ){
-			local $_ = $row;
-			# if grep returns false try the block again
-			redo GETROW
-				unless $self->{grep_rows}->($row, $self);
-		}
-	}
+  GETROW: {
+    $row = $self->_get_custom_or_raw_row();
+    # call grep_rows with the same semantics as map_rows (below)
+    if( $row && $self->{grep_rows} ){
+      local $_ = $row;
+      # if grep returns false try the block again
+      redo GETROW
+        unless $self->{grep_rows}->($row, $self);
+    }
+  }
 
-	# If a row was found pass it through the map_rows sub (if we have one).
-	# Send the row first since it's the important part.
-	# This isn't a method call, and $self will likely be seldom used.
-	if( $row && $self->{map_rows} ){
-		# localize $_ to the $row for consistency with the built in map()
-		local $_ = $row;
-		# also pass row as the first argument to simulate a normal function call
-		$row = $self->{map_rows}->($row, $self);
-	}
+  # If a row was found pass it through the map_rows sub (if we have one).
+  # Send the row first since it's the important part.
+  # This isn't a method call, and $self will likely be seldom used.
+  if( $row && $self->{map_rows} ){
+    # localize $_ to the $row for consistency with the built in map()
+    local $_ = $row;
+    # also pass row as the first argument to simulate a normal function call
+    $row = $self->{map_rows}->($row, $self);
+  }
 
-	return $row;
+  return $row;
 }
 
 =method insert_sql
@@ -450,17 +451,17 @@ Generate the C<INSERT> SQL statement that will be passed to L<DBI/prepare>.
 =cut
 
 sub insert_sql {
-	my ($self) = @_;
-	join(' ',
-		'INSERT INTO',
-		$self->quoted_name,
-		'(',
-			join(', ', @{ $self->quoted_column_names } ),
-		')',
-		'VALUES(',
-			join(', ', ('?') x @{ $self->columns }),
-		')'
-	);
+  my ($self) = @_;
+  join(' ',
+    'INSERT INTO',
+    $self->quoted_name,
+    '(',
+      join(', ', @{ $self->quoted_column_names } ),
+    ')',
+    'VALUES(',
+      join(', ', ('?') x @{ $self->columns }),
+    ')'
+  );
 }
 
 =method insert_all
@@ -472,21 +473,21 @@ and then call L<DBI/execure> once for each row returned by L</get_row>.
 =cut
 
 sub insert_all {
-	my ($self) = @_;
+  my ($self) = @_;
 
-	my $rows = 0;
-	my $sth = $self->{dbh}->prepare($self->insert_sql);
-	while( my $row = $self->get_row() ){
-		++$rows;
-		$sth->execute(@$row);
-	}
+  my $rows = 0;
+  my $sth = $self->{dbh}->prepare($self->insert_sql);
+  while( my $row = $self->get_row() ){
+    ++$rows;
+    $sth->execute(@$row);
+  }
 
-	return $rows;
+  return $rows;
 }
 
 =method load
 
-	my $number_of_rows = $loader->load();
+  my $number_of_rows = $loader->load();
 
 Load data into database table.
 This is a wrapper that does the most commonly needed things
@@ -504,26 +505,26 @@ Returns the number of rows inserted.
 =cut
 
 sub load {
-	my ($self) = @_;
+  my ($self) = @_;
 
-	# is it appropriate/sufficient to call prepare_data() from new()?
+  # is it appropriate/sufficient to call prepare_data() from new()?
 
-	# TODO: transaction
-	$self->{dbh}->begin_work()
-		if $self->{transaction};
+  # TODO: transaction
+  $self->{dbh}->begin_work()
+    if $self->{transaction};
 
-	$self->drop()
-		if $self->{drop};
+  $self->drop()
+    if $self->{drop};
 
-	$self->create()
-		if $self->{create};
+  $self->create()
+    if $self->{create};
 
-	my $rows = $self->insert_all();
+  my $rows = $self->insert_all();
 
-	$self->{dbh}->commit()
-		if $self->{transaction};
+  $self->{dbh}->commit()
+    if $self->{transaction};
 
-	return $rows;
+  return $rows;
 }
 
 =method name
@@ -534,11 +535,11 @@ Returns the full table name
 =cut
 
 sub name {
-	my ($self) = @_;
-	return $self->{_name} ||=
-		$self->{name_prefix} .
-		($self->{name} || $self->default_name) .
-		$self->{name_suffix};
+  my ($self) = @_;
+  return $self->{_name} ||=
+    $self->{name_prefix} .
+    ($self->{name} || $self->default_name) .
+    $self->{name_suffix};
 }
 
 =method prepare_data
@@ -551,8 +552,8 @@ This is mostly a hook for subclasses and does very little in this module.
 =cut
 
 sub prepare_data {
-	my ($self) = @_;
-	$self->{row_index} = 0;
+  my ($self) = @_;
+  $self->{row_index} = 0;
 }
 
 =method quoted_name
@@ -563,28 +564,28 @@ Passes C<catalog>, C<schema>, and C<name> attributes to L<DBI/quote_identifier>.
 =cut
 
 sub quoted_name {
-	my ($self) = @_;
-	# allow quoted name to be passed in to handle edge cases
-	return $self->{quoted_name} ||=
-		$self->{dbh}->quote_identifier(
-			$self->{catalog}, $self->{schema}, $self->name);
+  my ($self) = @_;
+  # allow quoted name to be passed in to handle edge cases
+  return $self->{quoted_name} ||=
+    $self->{dbh}->quote_identifier(
+      $self->{catalog}, $self->{schema}, $self->name);
 }
 
 =method quoted_column_names
 
-	my $quoted_names = $loader->quoted_column_names();
-	# ['"column1"', '"column two"']
+  my $quoted_names = $loader->quoted_column_names();
+  # ['"column1"', '"column two"']
 
 Returns an arrayref of column names quoted by the database driver.
 
 =cut
 
 sub quoted_column_names {
-	my ($self) = @_;
-	return $self->{quoted_column_names} ||= [
-		map { $self->{dbh}->quote_identifier($_) }
-			@{ $self->column_names }
-	];
+  my ($self) = @_;
+  return $self->{quoted_column_names} ||= [
+    map { $self->{dbh}->quote_identifier($_) }
+      @{ $self->column_names }
+  ];
 }
 
 1;
@@ -615,7 +616,7 @@ Each element can be an arrayref of column name and data type
 or just a string for the column name and L</default_column_type> will be used.
 If not passed in the first row of C<data> will be assumed to be column names.
 
-	columns => ['first_name', 'last_name', ['last_seen', 'date']]
+  columns => ['first_name', 'last_name', ['last_seen', 'date']]
 
 * C<dbh> - A database handle as returned by C<< DBI->connect() >>
 This module probably isn't useful without one.
@@ -625,7 +626,7 @@ Subclasses may define more appropriate options and ignore this parameter.
 If you're using this base class, you'll probably need this
 (unless you provide your own C<get_row> coderef).
 
-	data => [ ['polar', 'bear', '2010-08-15'], ['blue', 'duck', '2009-07-30'] ]
+  data => [ ['polar', 'bear', '2010-08-15'], ['blue', 'duck', '2009-07-30'] ]
 
 =end :list
 
@@ -641,7 +642,7 @@ This will be used for each column that does not explicitly define a data type.
 The default will be determined from the database driver
 using C<default_sql_data_type>.  See L</default_column_type>.
 
-	default_column_type => 'CHAR(50)'
+  default_column_type => 'CHAR(50)'
 
 * C<drop> - Boolean to execute a C<DROP TABLE> statement before C<CREATE TABLE>
 Defaults to false.  Set it to true if the named table already exists and you
@@ -653,9 +654,9 @@ than the module expects (to split a string into an arrayref, for instance).
 This is called like a method (the object will be C<$_[0]>).
 The return value will be passed to C<map_rows> if both are present.
 
-	# each record is a line from a log file;
-	# use the m// operator in list context to capture desired fields
-	get_row => sub { my $s = <$io>; [ $s =~ m/^(\d+)\s+"([^"]+)"\s+(\S+)$/ ] }
+  # each record is a line from a log file;
+  # use the m// operator in list context to capture desired fields
+  get_row => sub { my $s = <$io>; [ $s =~ m/^(\d+)\s+"([^"]+)"\s+(\S+)$/ ] }
 
 C<NOTE>: If you use C<get_row> and don't pass C<data>
 you will probably want to pass C<columns>
@@ -671,9 +672,9 @@ If it returns a true value the row will be used.
 If it returns false the next row will be fetched and the process will repeat
 (until all rows have been exhausted).
 
-	grep_rows => sub { $_->[1] =~ /something/ } # accept the row if it matches
+  grep_rows => sub { $_->[1] =~ /something/ } # accept the row if it matches
 
-	grep_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+  grep_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
 
 * C<map_rows> - A sub (coderef) to filter/mangle a row before use
 Named after the built in C<map> function.
@@ -683,9 +684,9 @@ for consistency with the built in C<map>.)
 The object will be passed as C<$_[1]> in case you want it.
 It should return an arrayref (which will be used as the row).
 
-	map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
+  map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
 
-	map_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+  map_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
 
 * C<name> - Table name
 Defaults to C<'data'>.  Subclasses may provide a more useful default.
