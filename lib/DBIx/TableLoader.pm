@@ -5,23 +5,6 @@ use warnings;
 package DBIx::TableLoader;
 # ABSTRACT: Easily load a database table from a data set
 
-=head1 SYNOPSIS
-
-  my $dbh = DBI->connect(@connection_args);
-
-  DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
-
-  # interact with new database table full of data in $dbh
-
-In most cases simply calling C<load()> is sufficient,
-but all methods are documented below in case you are curious
-or want to do something a little trickier.
-
-There are many options available for configuration.
-See L</OPTIONS> for the full list.
-
-=cut
-
 use Carp qw(croak);
 #use DBI 1.13 (); # oldest DBI on CPAN as of 2011-02-15; Has SQL_LONGVARCHAR
 
@@ -593,6 +576,17 @@ sub quoted_column_names {
 
 =for stopwords CSV SQLite PostgreSQL MySQL TODO arrayrefs
 
+=for test_synopsis
+my (@connection_args, $dbh, $data);
+
+=head1 SYNOPSIS
+
+  my $dbh = DBI->connect(@connection_args);
+
+  DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
+
+  # interact with new database table full of data in $dbh
+
 =head1 DESCRIPTION
 
 This module tries to provide a fast and simple (but very configurable)
@@ -601,6 +595,9 @@ interface for taking a set of data and loading it into a database table.
 Common uses would be to take data from a file (like a CSV)
 and load it into a SQLite table.
 (For that specific case see L<DBIx::TableLoader::CSV>.)
+
+In most cases simply calling C<load()> is sufficient,
+but all methods are documented below for completeness.
 
 =head1 OPTIONS
 
