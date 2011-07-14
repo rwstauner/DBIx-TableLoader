@@ -47,7 +47,7 @@ is_deeply($records, {
   }, 'got expected records'
 );
 
-$records = $dbh->selectall_arrayref(q[SELECT smell, color FROM "silly ness" WHERE size = 'small' ORDER BY size]);
+$records = $dbh->selectall_arrayref(q[SELECT smell, color FROM "silly ness" WHERE size = 'small' ORDER BY smell]);
 
 is_deeply($records, [[qw(apple red)], [qw(frog green)]], 'got expected records');
 
