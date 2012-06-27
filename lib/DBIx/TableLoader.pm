@@ -452,7 +452,7 @@ sub insert_sql {
 
 Execute an C<INSERT> statement on the database handle for each row of data.
 It will call L<DBI/prepare> using L</insert_sql>
-and then call L<DBI/execure> once for each row returned by L</get_row>.
+and then call L<DBI/execute> once for each row returned by L</get_row>.
 
 =cut
 
