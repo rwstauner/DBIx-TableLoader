@@ -2,6 +2,8 @@ Revision history for DBIx-TableLoader
 
 {{$NEXT}}
 
+  - use Try::Tiny;
+
 1.001     2011-07-14T23:33:27Z
 
   - Make DBI tests regular tests rather than author tests

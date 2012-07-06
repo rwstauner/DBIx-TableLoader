@@ -7,6 +7,7 @@ package DBIx::TableLoader;
 
 use Carp qw(croak);
 #use DBI 1.13 (); # oldest DBI on CPAN as of 2011-02-15; Has SQL_LONGVARCHAR
+use Try::Tiny 0.09;
 
 =method new
 
@@ -243,7 +244,7 @@ If all else fails it will default to C<text>
 
 sub default_column_type {
   my ($self) = @_;
-  return $self->{default_column_type} ||= eval {
+  return $self->{default_column_type} ||= try {
     $self->_data_type_from_driver($self->default_sql_data_type);
   }
     # outside the eval in case there was an error
@@ -261,7 +262,7 @@ Defaults to C<DBI::SQL_LONGVARCHAR>.
 
 sub default_sql_data_type {
   my ($self) = @_;
-  $self->{default_sql_data_type} ||= eval {
+  $self->{default_sql_data_type} ||= try {
     # if this doesn't work default_column_type will just use 'text'
     require DBI;
     DBI::SQL_LONGVARCHAR();
