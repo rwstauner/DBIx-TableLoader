@@ -406,24 +406,25 @@ sub get_row {
   my $row;
 
   GETROW: {
-    $row = $self->_get_custom_or_raw_row();
+    $row = $self->_get_custom_or_raw_row()
+      or last GETROW;
+
     # call grep_rows with the same semantics as map_rows (below)
-    if( $row && $self->{grep_rows} ){
+    if( $self->{grep_rows} ){
       local $_ = $row;
       # if grep returns false try the block again
       redo GETROW
         unless $self->{grep_rows}->($row, $self);
     }
-  }
 
-  # If a row was found pass it through the map_rows sub (if we have one).
-  # Send the row first since it's the important part.
-  # This isn't a method call, and $self will likely be seldom used.
-  if( $row && $self->{map_rows} ){
-    # localize $_ to the $row for consistency with the built in map()
-    local $_ = $row;
-    # also pass row as the first argument to simulate a normal function call
-    $row = $self->{map_rows}->($row, $self);
+    # Send the row first since it's the important part.
+    # This isn't a method call, and $self will likely be seldom used.
+    if( $self->{map_rows} ){
+      # localize $_ to the $row for consistency with the built in map()
+      local $_ = $row;
+      # also pass row as the first argument to simulate a normal function call
+      $row = $self->{map_rows}->($row, $self);
+    }
   }
 
   return $row;
