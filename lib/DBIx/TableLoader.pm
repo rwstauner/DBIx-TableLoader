@@ -78,6 +78,7 @@ sub base_defaults {
     drop_suffix          => '',
     get_row              => undef,
     grep_rows            => undef,
+    handle_invalid_row   => undef,
     map_rows             => undef,
     # default_name() method will default to 'data' if 'name' is blank
     # this way subclasses don't have to override this value in defaults()
@@ -425,8 +426,76 @@ sub get_row {
       # also pass row as the first argument to simulate a normal function call
       $row = $self->{map_rows}->($row, $self);
     }
+
+    # validate the row before passing a bad value to the DBI
+    $row = try {
+      $self->validate_row($row);
+    }
+    catch {
+      # if there was an error, pass it through the handler
+      # the handler should die, return a row, or return false to skip
+      $self->handle_invalid_row($_[0], $row);
+    }
+      or redo GETROW;
   }
 
+  return $row;
+}
+
+=method handle_invalid_row
+
+This is called from L</get_row> when a row is determined to be invalid
+(when L</validate_row> throws an error).
+
+If C<handle_invalid_row> was not specified in the constructor
+this method is a no-op:
+the original row will be returned (and eventually passed to L<DBI/execute>).
+
+Possible values for the C<handle_invalid_row> option:
+
+=begin :list
+
+* C<die>  - Calls C<die()>  with the error message
+* C<warn> - Calls C<warn()> with the error message and returns the row unmodified
+
+=item * code ref
+
+If it's a subroutine reference it is called as a method,
+receiving the loader object, the error message, and the row:
+
+  $handler->($loader, $error, $row);
+
+The handler should either C<die> to cease processing,
+return false to skip this row and get the next one,
+or return a (possibly modified) row that will be passed to L<DBI/execute>.
+
+This allows you to, for example, write to a log when a bad row
+is found without aborting your transaction:
+
+  handle_invalid_row => sub {
+    my ($self, $error, $row) = @_;
+    $logger->log(['Bad row: %s: %s', $error, $row]);
+    return; # return false to skip this row and move to the next one
+  }
+
+=end :list
+
+=cut
+
+sub handle_invalid_row {
+  my ($self, $error, $row) = @_;
+
+  if( my $handler = $self->{handle_invalid_row} ){
+    die $error if $handler eq 'die';
+    if( $handler eq 'warn' ){
+      warn $error;
+      return $row;
+    }
+    # otherwise it should be a coderef (or a method name (for a subclass maybe))
+    return $self->$handler($error, $row);
+  }
+
+  # pass through if no handler was defined
   return $row;
 }
 
@@ -464,8 +533,8 @@ sub insert_all {
   my $rows = 0;
   my $sth = $self->{dbh}->prepare($self->insert_sql);
   while( my $row = $self->get_row() ){
-    ++$rows;
     $sth->execute(@$row);
+    ++$rows;
   }
 
   return $rows;
@@ -574,6 +643,41 @@ sub quoted_column_names {
   ];
 }
 
+=method validate_row
+
+Called from L</get_row> to check that the provided row is valid.
+
+It may C<die> for any error
+which will be caught in L</get_row>
+and the error will be passed to L</handle_invalid_row>.
+
+The return value works like that of L</handle_invalid_row>:
+On success, the valid row (possibly modified) should be returned.
+If a false value is returned L</get_row> will attempt to
+get another row.
+
+Currently this only checks that the number of fields in the row
+matches the number of columns expected,
+however other checks may be added in the future.
+Subclasses can overwrite this to define their own validations
+(though calling the original (superclass method) is recommended).
+
+=cut
+
+sub validate_row {
+  my ($self, $row) = @_;
+
+  # DBI will croak if exec'd with different numbers
+  my $num_columns = @{ $self->columns };
+
+  die 'Row has ' . @$row . ' fields when ' .  $num_columns . ' are expected'
+    if @$row != $num_columns;
+
+  # are there other validation checks we can do?
+
+  return $row;
+}
+
 1;
 
 =for stopwords CSV SQLite PostgreSQL MySQL TODO arrayrefs
@@ -675,6 +779,11 @@ If it returns false the next row will be fetched and the process will repeat
   grep_rows => sub { $_->[1] =~ /something/ } # accept the row if it matches
 
   grep_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+
+* C<handle_invalid_row> - How to handle invalid rows.
+Can be C<die>, C<warn>, or a sub (coderef).
+See L</handle_invalid_row> for more details.
+Default is to ignore (in which case DBI will likely error).
 
 * C<map_rows> - A sub (coderef) to filter/mangle a row before use
 Named after the built in C<map> function.
