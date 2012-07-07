@@ -14,13 +14,34 @@ my $records;
 
 my $data = [
   [qw(color smell size)],
-  [qw(black skunk medium)],
+  [qw(black skunk med i u m)], # invalid: end columns get concatenated
+  [qw(bad bad bad bad)],       # invalid: ignored
   [qw(red   apple small)],
   [qw(green Christmas  large)],
   [qw(green frog  small)],
 ];
 
-DBIx::TableLoader->new(name => 'silly ness', dbh => $dbh, data => $data)->load();
+my @invalid;
+DBIx::TableLoader->new(
+  name => 'silly ness',
+  dbh  => $dbh,
+  data => $data,
+  handle_invalid_row => sub {
+    my ($loader, $err, $row) = @_;
+    if( $row->[0] eq 'bad' ){
+      push(@invalid, $_[2]);
+      return 0;
+    }
+    else {
+      return [ @$row[0,1], join '', @$row[2 .. $#$row] ];
+    }
+  },
+)->load();
+
+is_deeply
+  \@invalid,
+  [ [qw(bad bad bad bad)] ],
+  'invalid row ignored';
 
 my $table_info = $dbh->table_info('main', '%', '%', 'TABLE')->fetchall_arrayref({})->[0];
 is($table_info->{TABLE_NAME}, 'silly ness', 'table name');

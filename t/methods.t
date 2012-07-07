@@ -134,6 +134,16 @@ foreach my $test (
     [qw(49 50 51)],
     [qw(97 98 99)],
   ]],
+  [ validate => {
+      handle_invalid_row => sub { [ @{$_[2]}[0,1] ] },
+      columns => [qw(d e)],
+    }, [
+      [qw(a b)],
+      [qw(1 2)],
+      [qw(a b)],
+      [qw(0 0)],
+    ],
+  ],
 ){
   my ($title, $over, $exp, $columns) = @$test;
   $columns ||= $over->{columns} || [qw(a b c)];

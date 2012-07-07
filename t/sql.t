@@ -141,7 +141,7 @@ foreach my $test (
   $executed = [];
   $prepared = 0;
   $loader = new_ok($mod, [{%def_args, columns => undef, data => $data}]);
-  is($loader->insert_all, $rows, 'inserted 1 record');
+  is($loader->insert_all, $rows, 'inserted all records');
   is($prepared, 1, 'prepare called 1 time');
   shift @$data; # remove columns from the top for comparison
   is_deeply($executed, $data, 'expectation executed') or diag explain $data;
