@@ -2,6 +2,8 @@ Revision history for DBIx-TableLoader
 
 {{$NEXT}}
 
+1.003     2012-07-09T19:14:14Z
+
   - Simplify validation error messages by excluding
     (internal) file/line position when die()ing
     and removing trailing newline when passing message to handler
