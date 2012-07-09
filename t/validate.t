@@ -34,7 +34,10 @@ subtest warn => sub {
   is_deeply $loader->get_row, [qw( daylight fading )], 'got good row';
 
   is scalar(@warnings), 1, 'only 1 warning';
-  like $warnings[0], qr/Row has 4 fields when 2 are expected/, 'got bad column number warning';
+  like
+    $warnings[0],
+    qr/^Row has 4 fields when 2 are expected$/,
+    'got bad column number warning';
 };
 
 subtest die => sub {
@@ -46,7 +49,10 @@ subtest die => sub {
     'die'
   );
   is_deeply $loader->get_row, [qw( anna begins )], 'got good row';
-  like exception { $loader->get_row }, qr/Row has 3 fields when 2 are expected/, 'died with bad column number';
+  like
+    exception { $loader->get_row },
+    qr/^Row has 3 fields when 2 are expected$/,
+    'died with bad column number';
 };
 
 subtest coderef => sub {
@@ -60,6 +66,14 @@ subtest coderef => sub {
     ],
     sub {
       my ($self, $error, $row) = @_;
+
+      # only real error messages
+      unless( $error eq 'colsbad' ){
+        like
+          $error,
+          qr/\ARow has \d+ fields when \d+ are expected\z/,
+          'error message has no file/line pos or trailing newline';
+      }
 
       # drop insignificant words to make it fit
       return [ grep { !/^(a|of|the)/ } @$row ]
@@ -82,7 +96,7 @@ subtest coderef => sub {
   # test hysml again manually
   like
     exception { $loader->validate_row([qw( have you seen me lately )]) },
-    qr/Row has 5 fields when 2 are expected/,
+    qr/^Row has 5 fields when 2 are expected$/,
     'died with bad column number';
 
   is

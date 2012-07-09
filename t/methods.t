@@ -134,10 +134,13 @@ foreach my $test (
     [qw(49 50 51)],
     [qw(97 98 99)],
   ]],
+  # let validator alter rows to fit
   [ validate => {
       handle_invalid_row => sub { [ @{$_[2]}[0,1] ] },
+      # declare that we only want 2 columns
       columns => [qw(d e)],
     }, [
+      # input data has 4 rows, just use the first two columns of each
       [qw(a b)],
       [qw(1 2)],
       [qw(a b)],

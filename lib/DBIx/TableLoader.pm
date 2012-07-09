@@ -432,9 +432,11 @@ sub get_row {
       $self->validate_row($row);
     }
     catch {
+      # file/line position is unhelpful, but so is the newline
+      chomp(my $e = $_[0]);
       # if there was an error, pass it through the handler
       # the handler should die, return a row, or return false to skip
-      $self->handle_invalid_row($_[0], $row);
+      $self->handle_invalid_row($e, $row);
     }
       or redo GETROW;
   }
@@ -486,13 +488,18 @@ sub handle_invalid_row {
   my ($self, $error, $row) = @_;
 
   if( my $handler = $self->{handle_invalid_row} ){
-    die $error if $handler eq 'die';
-    if( $handler eq 'warn' ){
-      warn $error;
+    # should this be croak/carp?
+    if( $handler eq 'die' ){
+      die $error . "\n";
+    }
+    elsif( $handler eq 'warn' ){
+      warn $error . "\n";
       return $row;
     }
     # otherwise it should be a coderef (or a method name (for a subclass maybe))
-    return $self->$handler($error, $row);
+    else {
+      return $self->$handler($error, $row);
+    }
   }
 
   # pass through if no handler was defined
@@ -670,7 +677,7 @@ sub validate_row {
   # DBI will croak if exec'd with different numbers
   my $num_columns = @{ $self->columns };
 
-  die 'Row has ' . @$row . ' fields when ' .  $num_columns . ' are expected'
+  die 'Row has ' . @$row . ' fields when ' .  $num_columns . " are expected\n"
     if @$row != $num_columns;
 
   # are there other validation checks we can do?

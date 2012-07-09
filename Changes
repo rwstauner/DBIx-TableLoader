@@ -2,6 +2,10 @@ Revision history for DBIx-TableLoader
 
 {{$NEXT}}
 
+  - Simplify validation error messages by excluding
+    (internal) file/line position when die()ing
+    and removing trailing newline when passing message to handler
+
 1.002     2012-07-07T21:49:40Z
 
   - Enable custom error handling via 'handle_invalid_row' option
