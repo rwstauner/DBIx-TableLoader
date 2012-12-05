@@ -1,3 +1,5 @@
+=pod
+
 =encoding utf-8
 
 =for :stopwords Randy Stauner ACKNOWLEDGEMENTS CSV SQLite PostgreSQL MySQL TODO arrayrefs
@@ -10,7 +12,7 @@ DBIx::TableLoader - Easily load a database table from a data set
 
 =head1 VERSION
 
-version 1.003
+version 1.100
 
 =head1 SYNOPSIS
 
