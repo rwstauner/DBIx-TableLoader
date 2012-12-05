@@ -2,19 +2,14 @@
 use strict;
 use warnings;
 use Test::More 0.96;
-use Test::MockObject 1.09 ();
+use lib 't/lib';
+use TLDBH;
 
-my $driver_type;
 my ($commit, $begun);
-my $sth = Test::MockObject->new()->mock(execute => sub {});
-my $dbh = Test::MockObject->new()
-  ->mock(commit => sub { ++$commit })
-  ->mock(begin_work => sub { ++$begun })
-  ->mock(do => sub {})->mock(prepare => sub { $sth })
-  ->mock(type_info => sub { return {TYPE_NAME => $driver_type}; })
-  ->mock(quote_identifier => sub { shift; join('.', map { qq["$_"] } grep { $_ } @_); });
+my $dbh = TLDBH->new;
 
-$dbh->fake_module('DBI', SQL_LONGVARCHAR => sub { ':-P' });
+$INC{'DBI.pm'} = __FILE__;
+sub DBI::SQL_LONGVARCHAR { ':-P' }
 
 my $mod = 'DBIx::TableLoader';
 eval "require $mod" or die $@;
@@ -64,11 +59,11 @@ foreach my $args (
   my $args = [dbh => $dbh, columns => ['foo']];
 
   # create new instance for each test to avoid internal caching
-  $driver_type = 'boo';
+  $dbh->{driver_type} = 'boo';
   is(new_ok($mod, $args)->default_column_type, 'boo', 'column type from dbh');
-  $driver_type = '';
+  $dbh->{driver_type} = '';
   is(new_ok($mod, $args)->default_column_type, 'text', 'default column type');
-  $driver_type = 'no matter';
+  $dbh->{driver_type} = 'no matter';
   is(new_ok($mod, [@$args, default_column_type => 'bear'])->default_column_type, 'bear', 'default column type');
 
   # sql data type
@@ -182,16 +177,16 @@ foreach my $test (
 {
   my $args = [data => [[qw(a b)], [1, 2]], dbh => $dbh];
   my $loader = new_ok($mod, [@$args]);
-  $commit = $begun = 0;
+  $dbh->reset;
   $loader->load;
-  is($begun,  1, 'transaction');
-  is($commit, 1, 'transaction');
+  is($dbh->{begin},  1, 'transaction');
+  is($dbh->{commit}, 1, 'transaction');
 
   $loader = new_ok($mod, [@$args, transaction => 0]);
-  $commit = $begun = 0;
+  $dbh->reset;
   $loader->load;
-  is($begun,  0, 'no transaction');
-  is($commit, 0, 'no transaction');
+  is($dbh->{begin},  0, 'no transaction');
+  is($dbh->{commit}, 0, 'no transaction');
 }
 
 done_testing;

@@ -2,22 +2,14 @@
 use strict;
 use warnings;
 use Test::More 0.96;
-use Test::MockObject 1.09 ();
-#use lib 't/lib';
-#use TLHelper;
+use lib 't/lib';
+use TLDBH;
 
 my $mod = 'DBIx::TableLoader';
 eval "require $mod" or die $@;
 
 my $loader;
-
-my ($executed, $prepared, $dbh_done) = [];
-my $sth = Test::MockObject->new()->mock(execute => sub { shift; push(@$executed, [@_]); });
-my $dbh = Test::MockObject->new()
-  ->mock(quote_identifier => sub { shift; join('.', map { qq{"$_"} } grep { $_ } @_) })
-  ->mock(do => sub { $dbh_done = $_[1]; })
-  ->mock(prepare => sub { ++$prepared; $sth })
-;
+my $dbh = TLDBH->new;
 
 my %def_args = (
   columns => ['a'],
@@ -39,7 +31,7 @@ sub test_statement {
   like($loader->${\"${method}_sql"}, qr/^${prefix}\s*${middle}\s*${suffix}$/, "$title $method sql");
   # call the method which sends the sql to dbh->do (which is mocked)
        $loader->${\"${method}"};
-  like($dbh_done, qr/^${prefix}\s*${middle}\s*${suffix}$/, "$title $method sql passed to dbh");
+  like($dbh->{do}, qr/^${prefix}\s*${middle}\s*${suffix}$/, "$title $method sql passed to dbh");
 }
 sub test_create { test_statement('create', @_); }
 sub test_drop   { test_statement('drop',   @_); }
@@ -138,13 +130,13 @@ foreach my $test (
 ){
   my $data = $test;
   my $rows = @$data - 1;
-  $executed = [];
-  $prepared = 0;
+  $dbh->reset;
   $loader = new_ok($mod, [{%def_args, columns => undef, data => $data}]);
   is($loader->insert_all, $rows, 'inserted all records');
-  is($prepared, 1, 'prepare called 1 time');
+  is($dbh->{prepared}, 1, 'prepare called 1 time');
   shift @$data; # remove columns from the top for comparison
-  is_deeply($executed, $data, 'expectation executed') or diag explain $data;
+  is_deeply($dbh->{sth}->{execute}, $data, 'expectation executed')
+    or diag explain $data;
 }
 
 done_testing;
