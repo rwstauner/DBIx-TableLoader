@@ -32,7 +32,7 @@ my %def_args = (
 # NOTE: determine_column_types is not specifically tested
 # but it sets the values returned from columns() and column_names()
 
-foreach my $args ( 
+foreach my $args (
   [{columns =>  [qw(d b i)] , %def_args}],
   [{data    => [[qw(d b i)]], %def_args}],
 ){
