@@ -13,8 +13,6 @@ sub execute {
 package # no_index
   TLDBH;
 
-use Test::MockObject 1.09 ();
-
 sub new {
   my $class = shift;
   my $self = {
