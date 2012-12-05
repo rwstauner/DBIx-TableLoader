@@ -568,10 +568,12 @@ Returns the number of rows inserted.
 
 sub load {
   my ($self) = @_;
+  my $rows;
 
   # is it appropriate/sufficient to call prepare_data() from new()?
 
-  # TODO: transaction
+  try {
+
   $self->{dbh}->begin_work()
     if $self->{transaction};
 
@@ -581,10 +583,21 @@ sub load {
   $self->create()
     if $self->{create};
 
-  my $rows = $self->insert_all();
+    $rows = $self->insert_all();
 
   $self->{dbh}->commit()
     if $self->{transaction};
+
+  }
+  catch {
+    # explicitly end the transaction that we started
+    # in case this isn't the last thing being done with the dbh
+    $self->{dbh}->rollback()
+      if $self->{transaction};
+
+    # propagate the exception
+    die $_[0];
+  };
 
   return $rows;
 }

@@ -2,6 +2,14 @@ Revision history for DBIx-TableLoader
 
 {{$NEXT}}
 
+  [Bug Fixes]
+  - Explicitly rollback the transaction before propagating exceptions
+    (if configured to manage transactions)
+    rather than leaving the transaction open.
+    This leaves the database handle in a more appropriate state
+    in case you do something else with it
+    after attempting to load a table that throws an exception.
+
   [Tests]
   - Remove Test::MockObject in favor of reusable test module.
 
