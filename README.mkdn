@@ -1,0 +1,540 @@
+[![Build Status](https://travis-ci.org/rwstauner/DBIx-TableLoader.svg?branch=master)](https://travis-ci.org/rwstauner/DBIx-TableLoader)
+[![Coverage Status](https://coveralls.io/repos/rwstauner/DBIx-TableLoader/badge.svg?branch=master)](https://coveralls.io/r/rwstauner/DBIx-TableLoader?branch=master)
+[![Kwalitee status](http://cpants.cpanauthors.org/dist/DBIx-TableLoader.png)](http://cpants.charsbar.org/dist/overview/DBIx-TableLoader)
+
+# NAME
+
+DBIx::TableLoader - Easily load a database table from a data set
+
+# VERSION
+
+version 1.101
+
+# SYNOPSIS
+
+    my $dbh = DBI->connect(@connection_args);
+
+    DBIx::TableLoader->new(dbh => $dbh, data => $data)->load();
+
+    # interact with new database table full of data in $dbh
+
+# DESCRIPTION
+
+This module tries to provide a fast and simple (but very configurable)
+interface for taking a set of data and loading it into a database table.
+
+Common uses would be to take data from a file (like a CSV)
+and load it into a SQLite table.
+(For that specific case see [DBIx::TableLoader::CSV](https://metacpan.org/pod/DBIx::TableLoader::CSV).)
+
+In most cases simply calling `load()` is sufficient,
+but all methods are documented below for completeness.
+
+# METHODS
+
+## new
+
+Create a new instance.  Accepts a hash or hashref of options.
+
+This module is very configurable but tries to use good defaults
+in the hopes that you won't need to configure too much in most cases.
+
+Most likely needed options:
+
+- `dbh` - A **d**ata**b**ase **h**andle as returned by `DBI->connect()`
+- `data` - An arrayref of arrayrefs of data (which will be the input records)
+
+See ["OPTIONS"](#options) for the full list.
+
+## base\_defaults
+
+Returns a hashref of the options defined by the base class
+and their default values.
+
+## defaults
+
+Returns a hashref of additional options defined by a subclass.
+
+## columns
+
+    my $columns = $loader->columns;
+    # [ ['column1', 'data type'], ['column two', 'data type'] ]
+
+Returns an arrayref of the columns.
+Each element is an arrayref of column name and column data type.
+
+## column\_names
+
+    my $column_names = $loader->column_names;
+    # ['column1', 'column two']
+
+Returns an arrayref of the column names.
+
+## create
+
+Executes a `CREATE TABLE` SQL statement on the database handle.
+
+## create\_prefix
+
+Generates the opening of the `CREATE TABLE` statement
+(everything before the column specifications).
+
+Defaults to `"CREATE $table_type TABLE $quoted_name ("`.
+
+## create\_sql
+
+Generates the SQL for the `CREATE TABLE` statement
+by concatenating ["create\_prefix"](#create_prefix),
+the column definitions,
+and ["create\_suffix"](#create_suffix).
+
+Can be overridden in the constructor.
+
+## create\_suffix
+
+Generates the closing of the `CREATE TABLE` statement
+(everything after the column specifications).
+
+Defaults to `")"`.
+
+## default\_name
+
+Returns the default (base) name for the table.
+
+This is mostly for subclasses where a useful table name
+can be determined from the input (like a filename).
+In this module it defaults to `'data'`.
+
+This gets concatenated together with
+["name\_prefix"](#name_prefix) and ["name\_suffix"](#name_suffix) in ["name"](#name).
+
+## default\_column\_type
+
+Columns that have not been given an explicit data type
+will be defined using the `default_column_type`.
+
+You can pass a value explicitly to the constructor,
+or it will try to determine an appropriate (string) type
+based on the database driver (using ["default\_sql\_data\_type"](#default_sql_data_type)).
+
+If all else fails it will default to `text`
+(which works for SQLite, PostgreSQL, MySQL, and some others).
+
+## default\_sql\_data\_type
+
+Passed to ["type\_info" in DBI](https://metacpan.org/pod/DBI#type_info) to query the database driver
+for an appropriate default column type.
+
+Defaults to `DBI::SQL_LONGVARCHAR`.
+
+## determine\_column\_types
+
+This method goes through the `columns` and converts any scalar
+column name to an arrayref of column name and `default_column_type`.
+It modifies itself and returns nothing.
+It is called automatically from the constructor.
+
+## drop
+
+Execute the `DROP TABLE` statement on the database handle.
+
+## drop\_prefix
+
+Returns the portion of the SQL statement before the table name.
+
+Defaults to `DROP TABLE`.
+
+## drop\_sql
+
+Generates the SQL for the `DROP TABLE` statement
+by concatenating ["drop\_prefix"](#drop_prefix), ["quoted\_name"](#quoted_name), and ["drop\_suffix"](#drop_suffix).
+
+Alternatively `drop_sql` can be set in the constructor
+if you need something more complex.
+
+## drop\_suffix
+
+Returns the portion of the SQL statement after the table name.
+
+Nothing by default.
+
+## get\_raw\_row
+
+Subclasses will override this method according to the input data format.
+
+This is called from ["get\_row"](#get_row) to retrieve the next row of raw data.
+
+It should return `undef` when there are no more rows.
+
+## get\_row
+
+    my $row = $loader->get_row();
+
+Returns a single row of data at a time (as an arrayref).
+This method will be called repeatedly until it returns `undef`.
+The returned arrayref will be flattened and passed to ["execute" in DBI](https://metacpan.org/pod/DBI#execute).
+
+## handle\_invalid\_row
+
+This is called from ["get\_row"](#get_row) when a row is determined to be invalid
+(when ["validate\_row"](#validate_row) throws an error).
+
+If `handle_invalid_row` was not specified in the constructor
+this method is a no-op:
+the original row will be returned (and eventually passed to ["execute" in DBI](https://metacpan.org/pod/DBI#execute)).
+
+Possible values for the `handle_invalid_row` option:
+
+- `die`  - Calls `die()`  with the error message
+- `warn` - Calls `warn()` with the error message and returns the row unmodified
+- code ref
+
+    If it's a subroutine reference it is called as a method,
+    receiving the loader object, the error message, and the row:
+
+        $handler->($loader, $error, $row);
+
+    The handler should either `die` to cease processing,
+    return false to skip this row and get the next one,
+    or return a (possibly modified) row that will be passed to ["execute" in DBI](https://metacpan.org/pod/DBI#execute).
+
+    This allows you to, for example, write to a log when a bad row
+    is found without aborting your transaction:
+
+        handle_invalid_row => sub {
+          my ($self, $error, $row) = @_;
+          $logger->log(['Bad row: %s: %s', $error, $row]);
+          return; # return false to skip this row and move to the next one
+        }
+
+## insert\_sql
+
+Generate the `INSERT` SQL statement that will be passed to ["prepare" in DBI](https://metacpan.org/pod/DBI#prepare).
+
+## insert\_all
+
+Execute an `INSERT` statement on the database handle for each row of data.
+It will call ["prepare" in DBI](https://metacpan.org/pod/DBI#prepare) using ["insert\_sql"](#insert_sql)
+and then call ["execute" in DBI](https://metacpan.org/pod/DBI#execute) once for each row returned by ["get\_row"](#get_row).
+
+## load
+
+    my $number_of_rows = $loader->load();
+
+Load data into database table.
+This is a wrapper that does the most commonly needed things
+in a single method call.
+If the `transaction` setting is true (default)
+the actions will be wrapped in a transaction.
+
+- ["drop"](#drop) (if configured)
+- ["create"](#create) (if configured)
+- ["insert\_all"](#insert_all)
+
+Returns the number of rows inserted.
+
+## name
+
+Returns the full table name
+(concatenation of `name_prefix`, `name`, and `name_suffix`).
+
+## prepare\_data
+
+This method is called from ["new"](#new) after the object is blessed (obviously).
+Any preparation work specific to the type of data should be done here.
+
+This is mostly a hook for subclasses and does very little in this module.
+
+## quoted\_name
+
+Returns the full, quoted table name.
+Passes `catalog`, `schema`, and `name` attributes to ["quote\_identifier" in DBI](https://metacpan.org/pod/DBI#quote_identifier).
+
+## quoted\_column\_names
+
+    my $quoted_names = $loader->quoted_column_names();
+    # ['"column1"', '"column two"']
+
+Returns an arrayref of column names quoted by the database driver.
+
+## validate\_row
+
+Called from ["get\_row"](#get_row) to check that the provided row is valid.
+
+It may `die` for any error
+which will be caught in ["get\_row"](#get_row)
+and the error will be passed to ["handle\_invalid\_row"](#handle_invalid_row).
+
+The return value works like that of ["handle\_invalid\_row"](#handle_invalid_row):
+On success, the valid row (possibly modified) should be returned.
+If a false value is returned ["get\_row"](#get_row) will attempt to
+get another row.
+
+Currently this only checks that the number of fields in the row
+matches the number of columns expected,
+however other checks may be added in the future.
+Subclasses can overwrite this to define their own validations
+(though calling the original (superclass method) is recommended).
+
+# OPTIONS
+
+This module is very \[excessively\] configurable.
+In most cases the default values will be sufficient,
+but you should be able to customize the object to fit your needs.
+
+Frequently Used Options:
+
+- `columns` - Arrayref of column definitions
+
+    Each element can be an arrayref of column name and data type
+    or just a string for the column name and ["default\_column\_type"](#default_column_type) will be used.
+    If not passed in the first row of `data` will be assumed to be column names.
+
+        columns => ['first_name', 'last_name', ['last_seen', 'date']]
+
+- `dbh` - A database handle as returned by `DBI->connect()`
+
+    This module probably isn't useful without one.
+
+- `data` - An arrayref of arrayrefs of data to populate the table;
+
+    Subclasses may define more appropriate options and ignore this parameter.
+    If you're using this base class, you'll probably need this
+    (unless you provide your own `get_row` coderef).
+
+        data => [ ['polar', 'bear', '2010-08-15'], ['blue', 'duck', '2009-07-30'] ]
+
+Less common options that are available when you desire extra tweaking power:
+
+- `create` - Boolean; Whether or not to perform the `CREATE TABLE` statement
+
+    Defaults to true.
+
+- `default_column_type` - Default data type for each column
+
+    This will be used for each column that does not explicitly define a data type.
+    The default will be determined from the database driver
+    using `default_sql_data_type`.  See ["default\_column\_type"](#default_column_type).
+
+        default_column_type => 'CHAR(50)'
+
+- `drop` - Boolean to execute a `DROP TABLE` statement before `CREATE TABLE`
+
+    Defaults to false.  Set it to true if the named table already exists and you
+    want to recreate it.
+
+- `get_row` - A sub (coderef) that will override ["get\_raw\_row"](#get_raw_row)
+
+    You can use this if your input data is in a different format
+    than the module expects (to split a string into an arrayref, for instance).
+    This is called like a method (the object will be `$_[0]`).
+    The return value will be passed to `map_rows` if both are present.
+
+        # each record is a line from a log file;
+        # use the m// operator in list context to capture desired fields
+        get_row => sub { my $s = <$io>; [ $s =~ m/^(\d+)\s+"([^"]+)"\s+(\S+)$/ ] }
+
+    `NOTE`: If you use `get_row` and don't pass `data`
+    you will probably want to pass `columns`
+    (otherwise columns will be taken from the first call to `get_row`).
+
+- `grep_rows` - A sub (coderef) to determine if a row should be used or skipped
+
+    Named after the built in `grep` function.
+    It will receive the row as an arrayref in `$_[0]`.
+    (The row will also be available in `$_`
+    for consistency with the built in `grep`.)
+    The object will be passed as `$_[1]` in case you want it.
+    If it returns a true value the row will be used.
+    If it returns false the next row will be fetched and the process will repeat
+    (until all rows have been exhausted).
+
+        grep_rows => sub { $_->[1] =~ /something/ } # accept the row if it matches
+
+        grep_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+
+- `handle_invalid_row` - How to handle invalid rows.
+
+    Can be `die`, `warn`, or a sub (coderef).
+    See ["handle\_invalid\_row"](#handle_invalid_row) for more details.
+    Default is to ignore (in which case DBI will likely error).
+
+- `map_rows` - A sub (coderef) to filter/mangle a row before use
+
+    Named after the built in `map` function.
+    It will receive the row as an arrayref in `$_[0]`.
+    (The row will also be available in `$_`
+    for consistency with the built in `map`.)
+    The object will be passed as `$_[1]` in case you want it.
+    It should return an arrayref (which will be used as the row).
+
+        map_rows => sub { [ map { uc $_ } @$_ ] } # uppercase all the fields
+
+        map_rows => sub { my ($row, $obj) = @_; do_something(); } # 2 variables
+
+- `name` - Table name
+
+    Defaults to `'data'`.  Subclasses may provide a more useful default.
+
+- `table_type` - String that will go before `TABLE` in ["create\_prefix"](#create_prefix)
+
+    A useful value might be `TEMPORARY` or `TEMP`.
+    This is probably database driver dependent, so use an appropriate value.
+
+- `transaction` - Boolean
+
+    All the operations in ["load"](#load) will be wrapped in a transaction by default.
+    Set this option to false to disable this.
+
+Options that will seldom be necessary
+but are available for completeness and/or consistency:
+
+- `catalog` - Table catalog
+
+    Passed to ["quote\_identifier" in DBI](https://metacpan.org/pod/DBI#quote_identifier) to get the full, quoted table name.
+    None by default.
+
+- `create_prefix` - The opening of the SQL statement
+
+    See ["create\_prefix"](#create_prefix).  Overwrite if you need something more complex.
+
+- `create_sql` - The `CREATE TABLE` statement
+
+    See ["create\_sql"](#create_sql).  Overwrite if you need something more complex.
+
+- `create_suffix` - The closing of the SQL statement
+
+    See ["create\_suffix"](#create_suffix).  Overwrite if you need something more complex.
+
+- `default_sql_data_type` - Default SQL standard data type
+
+    If `default_column_type` is not supplied it will be determined by
+    asking the database driver for a type corresponding to `DBI::SQL_LONGVARCHAR`.
+    Alternate values can be passed (`DBI::SQL_VARCHAR()` for instance).
+    See ["default\_sql\_data\_type"](#default_sql_data_type).
+
+- `drop_prefix` - The opening of the SQL statement
+
+    See ["drop\_prefix"](#drop_prefix).  Overwrite if you need something more complex.
+
+- `drop_sql` - The `DROP TABLE` statement
+
+    Will be constructed if not provided.  See ["drop\_sql"](#drop_sql).
+
+- `drop_suffix` - The closing of the SQL statement
+
+    See ["drop\_suffix"](#drop_suffix).  Overwrite if you need something more complex.
+
+- `name_prefix` - String prepended to table name
+
+    Probably mostly useful in subclasses where `name` is determined automatically.
+
+- `name_suffix` - String appended to table name
+
+    Probably mostly useful in subclasses where `name` is determined automatically.
+
+- `quoted_name` - Full table name, properly quoted
+
+    Only necessary if you need something more complicated than
+    `$dbh->quote_identifier($catalog, $schema, $table)`
+    (see ["quote\_identifier" in DBI](https://metacpan.org/pod/DBI#quote_identifier)).
+
+- `schema` - Table schema
+
+    Passed to ["quote\_identifier" in DBI](https://metacpan.org/pod/DBI#quote_identifier) to get the full, quoted table name.
+    None by default.
+
+# SUBCLASSING
+
+This module was designed to be subclassed
+for use with specific data input formats.
+
+[DBIx::TableLoader::CSV](https://metacpan.org/pod/DBIx::TableLoader::CSV) is a prime example.
+It is the entire reason this base module was designed.
+
+Subclasses will likely want to override the following methods:
+
+- ["defaults"](#defaults) - a hashref of additional acceptable options (and default values)
+- ["default\_name"](#default_name) - if you can determine a good default name from the input
+- ["get\_raw\_row"](#get_raw_row) - to return the next row of data
+- ["prepare\_data"](#prepare_data) - to initialize your object/data (open the file, etc.)
+
+Be sure to check out the code for [DBIx::TableLoader::CSV](https://metacpan.org/pod/DBIx::TableLoader::CSV).
+Also see a very simple example in `t/subclass.t`.
+
+# RATIONALE
+
+It seemed frequent that I would find a data set that was difficult to
+view/analyze (CSV, log file, etc.) and would prefer to load it into a database
+for its powerful, familiar processing abilities.
+
+I once chose to use MySQL because its built in `LOAD DATA` command
+read the malformed CSV I was given and the `.import` command in SQLite did not.
+
+I wrote this module so that I'd never have to make such a choice again.
+I wanted to be able to use the power of [Text::CSV](https://metacpan.org/pod/Text::CSV) to make sure I could
+take any CSV I ever got and load it into SQLite easily.
+
+I tried to make this module a base class to be able to handle various formats.
+
+# TODO
+
+This is more of a list of ideas than features that are planned.
+
+- Allow a custom column name transformation sub to be passed in
+- Use ["decamelize" in String::CamelCase](https://metacpan.org/pod/String::CamelCase#decamelize) by default?
+- Allow extra columns (like `id`) to be added and/or generated
+- Option to scan the data to guess appropriate data types for each column
+- Make a SQLite function so that you could call this from a `dbish` command line?
+- Allow `UPDATE` statements and specify the key columns (for the `WHERE` clause)
+
+# SEE ALSO
+
+- [DBIx::TableLoader::CSV](https://metacpan.org/pod/DBIx::TableLoader::CSV)
+
+# SUPPORT
+
+## Perldoc
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc DBIx::TableLoader
+
+## Websites
+
+The following websites have more information about this module, and may be of help to you. As always,
+in addition to those websites please use your favorite search engine to discover more resources.
+
+- MetaCPAN
+
+    A modern, open-source CPAN search engine, useful to view POD in HTML format.
+
+    [https://metacpan.org/release/DBIx-TableLoader](https://metacpan.org/release/DBIx-TableLoader)
+
+## Bugs / Feature Requests
+
+Please report any bugs or feature requests by email to `bug-dbix-tableloader at rt.cpan.org`, or through
+the web interface at [https://rt.cpan.org/Public/Bug/Report.html?Queue=DBIx-TableLoader](https://rt.cpan.org/Public/Bug/Report.html?Queue=DBIx-TableLoader). You will be automatically notified of any
+progress on the request by the system.
+
+## Source Code
+
+[https://github.com/rwstauner/DBIx-TableLoader](https://github.com/rwstauner/DBIx-TableLoader)
+
+    git clone https://github.com/rwstauner/DBIx-TableLoader.git
+
+# AUTHOR
+
+Randy Stauner <rwstauner@cpan.org>
+
+# CONTRIBUTORS
+
+- Randy Stauner <randy@magnificent-tears.com>
+- Randy Stauner <randy@r4s6.net>
+
+# COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2011 by Randy Stauner.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
