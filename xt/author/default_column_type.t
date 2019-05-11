@@ -21,14 +21,14 @@ my @types = (
 );
 
 my @tests = (
-  [SQLite => 'dbname=:memory:',          [undef,  undef,     undef,   undef]],
-  [Pg     => 'host=localhost;port=5432', [undef,  'text',    'bool', 'int4']],
-  [PgPP   => 'host=localhost;port=5432', [undef,  undef,     undef,   undef]],
-  [mysql  => 'host=127.0.0.1;port=3306', ['text', 'varchar', undef,   'integer']],
+  [SQLite => 1.62, 'dbname=:memory:',          [undef,  'TEXT',    undef,  'INTEGER']],
+  [Pg     => 0,    'host=localhost;port=5432', [undef,  'text',    'bool', 'int4']],
+  [PgPP   => 0,    'host=localhost;port=5432', [undef,  undef,     undef,  undef]],
+  [mysql  => 0,    'host=127.0.0.1;port=3306', ['text', 'varchar', undef,  'integer']],
 );
 
 foreach my $test ( @tests ){
-  my ($dbd, $dsn, $exp) = @$test;
+  my ($dbd, $ver, $dsn, $exp) = @$test;
 
   my %e = (
     dsn => "TEST_DBI_\U${dbd}_DSN",
@@ -36,8 +36,8 @@ foreach my $test ( @tests ){
   );
 
   subtest $dbd => sub {
-    eval "require DBD::$dbd";
-    plan skip_all => "DBD::$dbd required for testing data type"
+    eval "require DBD::$dbd; DBD::${dbd}->VERSION($ver)"; ## no critic
+    plan skip_all => "DBD::$dbd $ver required for testing data type"
       if $@;
 
     $dsn = $ENV{$e{dsn}}
